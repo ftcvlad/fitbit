@@ -1,4 +1,4 @@
-package geneactiv.servlets;
+package fitbit.servlets;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -6,7 +6,7 @@ package geneactiv.servlets;
  * and open the template in the editor.
  */
 
-import geneactiv.models.User;
+import fitbit.models.User;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -24,10 +24,10 @@ import javax.naming.NamingException;
 import javax.naming.InitialContext;
 import java.util.ArrayList;
 
-import geneactiv.models.PatientManager;
+import fitbit.models.PatientManager;
 
 import com.google.gson.Gson;
-import geneactiv.models.Patient;
+import fitbit.stores.Patient;
 import java.io.PrintWriter;
 /**
  *

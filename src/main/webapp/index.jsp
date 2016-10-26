@@ -65,10 +65,10 @@
          <div id="tabs-1">
            <div class="container">
                 <div id="radioButtonSetFitbit" >
-                  <label for="radio1" class="radioTopLabel">from Fitbit.com</label>
-                  <input type="radio" id="radio1" name="radioFitTop" value="fit" class="radioFitTop" onchange="fromFitbitSelected()">
+                  <label for="radio1" class="radioTopLabel" >from Fitbit.com</label>
+                  <input type="radio"  checked="checked" id="radio1" name="radioFitTop" value="fit" class="radioFitTop" onchange="fromFitbitSelected()">
                   <label for="radio2" class="radioTopLabel">Fitbit.com+Save to DB</label>
-                  <input type="radio" id="radio2" name="radioFitTop" value="fitSave" class="radioFitTop" checked="checked" onchange="fromFitbitAndDbSelected()">
+                  <input type="radio" id="radio2" name="radioFitTop" value="fitSave" class="radioFitTop"  onchange="fromFitbitAndDbSelected()">
                   <label for="radio3" class="radioTopLabel">from DB</label>
                   <input type="radio" id="radio3"  class="radioFitTop" value="DB" name="radioFitTop" onchange="fromDbSelected()">
                 </div>

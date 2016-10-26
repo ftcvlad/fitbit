@@ -1,4 +1,4 @@
-package geneactiv.models;
+package fitbit.models;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -8,6 +8,7 @@ package geneactiv.models;
 
 
 
+import fitbit.stores.Patient;
 import java.sql.Connection;
 
 
@@ -46,7 +47,7 @@ public class User {
        
         PreparedStatement stmt;
         
-        stmt = conn.prepareStatement("SELECT password from allclinicians where username =?");
+        stmt = conn.prepareStatement("SELECT password from fitbit_allclinicians where username =?");
         stmt.setString(1,username);
         ResultSet rs = stmt.executeQuery();
 
@@ -70,7 +71,7 @@ public class User {
        
         PreparedStatement stmt;
 
-        stmt = conn.prepareStatement("INSERT INTO allclinicians (username, password) VALUES (?,?)");
+        stmt = conn.prepareStatement("INSERT INTO fitbit_allclinicians (username, password) VALUES (?,?)");
         stmt.setString(1,username );
         stmt.setString(2,password );
         stmt.executeUpdate();

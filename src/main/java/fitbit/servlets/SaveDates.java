@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package geneactiv.servlets;
+package fitbit.servlets;
 
-import geneactiv.models.User;
+import fitbit.models.User;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -19,8 +19,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 import com.google.gson.Gson;
-import geneactiv.models.DateManager;
-import geneactiv.models.Patient;
+import fitbit.models.DateManager;
+import fitbit.stores.Patient;
 import java.util.ArrayList;
 import java.util.HashMap;
 /**

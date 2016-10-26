@@ -3,12 +3,12 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package geneactiv.servlets;
+package fitbit.servlets;
 
 import com.google.gson.Gson;
-import geneactiv.models.Patient;
-import geneactiv.models.PatientManager;
-import geneactiv.models.User;
+import fitbit.stores.Patient;
+import fitbit.models.PatientManager;
+import fitbit.models.User;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;

@@ -73,7 +73,7 @@ $(function () {
 
 
     $("#frq").selectmenu({width:150});
-    $("#frq option").not(':eq(1)').attr("disabled", true);
+  
     $("#graphType").selectmenu({width:150});
     $("#userIDselect").selectmenu({width:150});
     
@@ -206,39 +206,28 @@ function createAdduserOptions(){
 
 
 function sendLogoutRequest(){
-   
-    if (ajaxLocked){return;}
-    doAjaxRequest("logout",{},
-                    function(){
-                         window.location.href = "Login";
-                    },   
-                           
-                    function(jqXHR,errorStatus,errorThrown){
-                    },
-                    "post");
-}
 
-function doAjaxRequest(path, data, successF, failF, method){
+    if (ajaxLocked){return;}           
     ajaxLocked=true;
     jQuery.ajax({
-        method: method, 
-        url: path, 
-       // dataType: "json", // Data type, HTML, json etc.
-        data: data,
-        success: function ( response,textStatus,jqXHR){successF(response);},
+        method: "post", 
+        url: "logout", 
+      
+        success: function ( response,textStatus,jqXHR){
+            window.location = "Login";
+        },
         error: function(jqXHR, errorStatus, errorThrown) {
 
             if( jqXHR.responseText==="Session expired" ) {
-                        window.location="Login";
-            }
-            else{
-                failF(jqXHR, errorStatus,errorThrown);
+                    window.location="Login";
             }
         },
-        complete: function(){ajaxLocked=false;}
-
-    });
+        complete: function(){
+            ajaxLocked=false;
+        }
+    });                
 }
+
 
 var datepickerBeforeShow = function(){
     return {maxDate:new Date()};
@@ -407,7 +396,7 @@ function fromFitbitSelected(){
 }
 
 function fromFitbitAndDbSelected(){
-      $("#frq option").not(':eq(1)').attr("disabled", true);
+      $("#frq option").not(':eq(0)').attr("disabled", true);
       $("#frq").val("1");
       $("#frq").selectmenu("refresh");
 }
@@ -450,18 +439,12 @@ function readSingleFile(deferred) {
 
     var errorSpanGene  = $("#errorSpanGENE");
 
- 
-   
-
     var file = document.getElementById("file-input").files[0];
 
 
     if (!file) {
-       
         setStatus(errorSpanGene, "Select file!", "ui-state-error", deferred);
-
     }
-
     else {
     
         var allSelDates =[]; 
@@ -473,13 +456,7 @@ function readSingleFile(deferred) {
            return;
         }
             
-        
-    
-    
-    
-       
        setStatus(errorSpanGene, "Reading file...", "ui-state-highlight");
-       
        
        var allArrayData = [];
        Papa.parse(file, {
@@ -497,8 +474,6 @@ function readSingleFile(deferred) {
                 }
        }); 
        
-       
-
     }
 }
 
@@ -506,8 +481,6 @@ function processCsvString(allArrayData, selDates, deferred) {
 
     var errorSpanGene = $("#errorSpanGENE");
     
-  
-  
     setStatus(errorSpanGene, "Processing data...", "ui-state-highlight");
 
 
@@ -528,7 +501,7 @@ function processCsvString(allArrayData, selDates, deferred) {
    
     var traverseIndex = 0;//big go through allArrayData
     
-    if (intraday == true) {
+    if (intraday === true) {
 
         //add time column
         var selectedData = [['TimeG']];
@@ -551,11 +524,11 @@ function processCsvString(allArrayData, selDates, deferred) {
                 }
             }
 
-            if (found == false) {
+            if (found === false) {
                 traverseIndex = 0;
                 continue;
             }
-            else if (columnToAdd == 0) {//create time column which can be of different length
+            else if (columnToAdd === 0) {//create time column which can be of different length
 
                 if (traverseIndex + 1 < allArrayData.length &&
                     allArrayData[traverseIndex + 1][0] !== null &&
@@ -654,7 +627,7 @@ function processCsvString(allArrayData, selDates, deferred) {
                     ind++;
 
 
-                    if (ind % everyNth == 0) {
+                    if (ind % everyNth === 0) {
                         selectedData[nextSelectDataIndex][columnToAdd] = stepsForPeriod;
                         stepsForPeriod = 0;
                         nextSelectDataIndex++;
@@ -668,18 +641,18 @@ function processCsvString(allArrayData, selDates, deferred) {
 
             }
 
-            if (stepsForPeriod != 0) {//if finished with series, output stepsForPeriod
+            if (stepsForPeriod !== 0) {//if finished with series, output stepsForPeriod
                 selectedData[nextSelectDataIndex][columnToAdd] = stepsForPeriod;
             }
 
-            if (traverseIndex == allArrayData.length) {
+            if (traverseIndex === allArrayData.length) {
                 break;
             }
 
 
         }//end of for all dates
     }//end of intraday==true
-    else if (intraday == false) {
+    else if (intraday === false) {
 
         selectedData = [["Date", "Steps summary"]];
 
@@ -695,7 +668,7 @@ function processCsvString(allArrayData, selDates, deferred) {
                 }
             }
 
-            if (found == false) {
+            if (found === false) {
                 traverseIndex = 0;
                 continue;
             }
@@ -713,7 +686,7 @@ function processCsvString(allArrayData, selDates, deferred) {
                 }
             }
 
-            if (sumForDate != 0) {
+            if (sumForDate !== 0) {
                 selectedData.push([targetDate, sumForDate]);
             }
             else {
@@ -730,9 +703,6 @@ function processCsvString(allArrayData, selDates, deferred) {
         return;
     }
 
-
-   
-  
     deferred.resolve(selectedData);
     
 }
@@ -745,9 +715,7 @@ function incrementDate(from_date) {
     var nextDate = new Date(parseInt(YYYY, 10), parseInt(MM, 10) - 1, parseInt(DD, 10));
     nextDate.setDate(nextDate.getDate() + 1);
 
-
     return dateToYYYYMMDDstring(nextDate);
-
 }
 
 

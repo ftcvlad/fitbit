@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package geneactiv.models;
+package fitbit.models;
 
+import fitbit.stores.Patient;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +20,7 @@ public class PatientManager {
     
     public void savePatient(String activeUserEmail,Patient patient, Connection conn) throws SQLException{
       
-          PreparedStatement stmt = conn.prepareStatement("INSERT INTO patients( Clinician, birthDate, name, surname,shortlisted)"+
+          PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_patients( Clinician, birthDate, name, surname,shortlisted)"+
                                            " VALUES (?,?,?,?,1);", 1);
                                                                    
           stmt.setString(1, activeUserEmail);      
@@ -41,10 +42,10 @@ public class PatientManager {
      public ArrayList<Patient> getShortlistedPatientsAndDates(String username, Connection conn) throws SQLException{
         
  
-        PreparedStatement stmt = conn.prepareStatement("SELECT dates.Date,dates.filling,patients.PCpair_id, patients.name, patients.surname, patients.birthDate"+
-                                            " FROM dates"+
-                                            " RIGHT JOIN patients ON (dates.PCpair_id=patients.PCpair_id)"+
-                                            " WHERE patients.Clinician=? AND patients.shortlisted=1"+
+        PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate"+
+                                            " FROM fitbit_dates"+
+                                            " RIGHT JOIN fitbit_patients ON (fitbit_dates.PCpair_id=fitbit_patients.PCpair_id)"+
+                                            " WHERE fitbit_patients.Clinician=? AND fitbit_patients.shortlisted=1"+
                                             " ORDER BY 3 ;",ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
         stmt.setString(1,username);
        
@@ -60,10 +61,10 @@ public class PatientManager {
                 nameCondition = "AND patients.name=?";
             }
 
-            PreparedStatement stmt = conn.prepareStatement("SELECT dates.Date,dates.filling,patients.PCpair_id, patients.name, patients.surname, patients.birthDate"+
-                                              " FROM dates"+
-                                              " RIGHT JOIN patients ON (dates.PCpair_id=patients.PCpair_id)"+
-                                              " WHERE patients.Clinician=? "+nameCondition+
+            PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate"+
+                                              " FROM fitbit_dates"+
+                                              " RIGHT JOIN fitbit_patients ON (fitbit_dates.PCpair_id=fitbit_patients.PCpair_id)"+
+                                              " WHERE fitbit_patients.Clinician=? "+nameCondition+
                                               " ORDER BY 3 ;",ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
 
             stmt.setString(1,activeUserEmail);
@@ -133,7 +134,7 @@ public class PatientManager {
             }
             whereStr = whereStr.substring(0,whereStr.length()-2);
 
-            PreparedStatement stmt = conn.prepareStatement("DELETE FROM patients "+whereStr+");");
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM fitbit_patients "+whereStr+");");
 
             stmt.setString(1,activeUserEmail);
             for (int i=0;i<idsToDelete.length;i++){
@@ -148,7 +149,7 @@ public class PatientManager {
     public int delistPatient(String activeUserEmail, int idToDelist,Connection conn ) throws SQLException{
         
         
-        PreparedStatement stmt = conn.prepareStatement("UPDATE patients "+
+        PreparedStatement stmt = conn.prepareStatement("UPDATE fitbit_patients "+
                 " SET shortlisted=0"+
                 " WHERE Clinician=? AND PCpair_id=?");
                 
@@ -168,7 +169,7 @@ public class PatientManager {
                 }
                 inString = inString.substring(0,inString.length()-1);
 
-                PreparedStatement stmt = conn.prepareStatement("UPDATE patients "+
+                PreparedStatement stmt = conn.prepareStatement("UPDATE fitbit_patients "+
                         " SET shortlisted=1"+
                         " WHERE Clinician=? AND ((PCpair_id) IN ("+inString+"))");
 

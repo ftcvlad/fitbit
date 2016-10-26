@@ -1,7 +1,7 @@
-package geneactiv.servlets;
+package fitbit.servlets;
 
-import geneactiv.models.User;
-import geneactiv.models.PatientManager;
+import fitbit.models.User;
+import fitbit.models.PatientManager;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
@@ -42,7 +42,7 @@ public class Login extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         
-        System.out.println("I am Login get and I feel alright :)");
+        
         request.getRequestDispatcher("WEB-INF/Login.jsp").forward(request, response);
     }
 
@@ -67,10 +67,10 @@ public class Login extends HttpServlet {
             User us=new User();
             try{
                
-                long start = System.currentTimeMillis();
+               
                 conn = dataSource.getConnection();
                 boolean isValid = us.isValidUser(username, password, conn);
-                 System.out.println("Time passed: "+(System.currentTimeMillis()-start));
+                 
                
                 if (isValid){
                     us.setUsername(username);
@@ -78,10 +78,9 @@ public class Login extends HttpServlet {
                     PatientManager pm = new PatientManager();
                     us.setAllPatients(pm.getShortlistedPatientsAndDates(username,conn));
                    
-                    //request.getSession().setAttribute("user", us);//here session created!
-
+                  
                     HttpSession session = request.getSession();
-//                    session.setMaxInactiveInterval(10);
+
                     session.setAttribute("user", us);
                     
                     

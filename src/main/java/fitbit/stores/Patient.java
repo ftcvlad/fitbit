@@ -3,12 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package geneactiv.models;
+package fitbit.stores;
 import java.util.ArrayList;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+
 /**
  *
  * @author Vlad

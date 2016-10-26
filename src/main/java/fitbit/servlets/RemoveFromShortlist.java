@@ -3,14 +3,17 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package geneactiv.servlets;
+package fitbit.servlets;
 
-import geneactiv.models.PatientManager;
-import geneactiv.models.User;
+import com.google.gson.Gson;
+import fitbit.stores.Patient;
+import fitbit.models.PatientManager;
+import fitbit.models.User;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
@@ -20,17 +23,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
-import com.google.gson.Gson;
-import java.util.ArrayList;
-import geneactiv.models.Patient;
-        
-import com.google.gson.reflect.TypeToken;
+
 /**
  *
  * @author Vlad
  */
-@WebServlet(name = "AddToShortlist", urlPatterns = {"/addToShortlist"})
-public class AddToShortlist extends HttpServlet {
+@WebServlet(name = "RemoveFromShortlist", urlPatterns = {"/removeFromShortlist"})
+public class RemoveFromShortlist extends HttpServlet {
 
     private DataSource dataSource;
     
@@ -55,30 +54,17 @@ public class AddToShortlist extends HttpServlet {
         User us = (User) session.getAttribute("user");
         String activeUserEmail = us.getUsername();
         
-        String json = request.getParameter("patients");
-     
-        
-        
-        
       
-
         try {
-            ArrayList<Patient> selectedPatientsForEnlist = new Gson().fromJson(json, new TypeToken<ArrayList<Patient>>(){}.getType());
-            ArrayList<Patient> addedPatients = us.addNonRepeatingPatients(selectedPatientsForEnlist);//add to session
-            
-            for (Patient o : addedPatients){
-                System.out.println("--> " +o.getId());
-            }
-            
-            
+            int idToDelist = Integer.parseInt(request.getParameter("id"));
             conn= dataSource.getConnection();
-            PatientManager pm =new PatientManager();
-            pm.enlistPatients(activeUserEmail, addedPatients, conn);//set shortlisted =1 in DB
+         
             
-            String jsonResponse  = new Gson().toJson(addedPatients);
-            response.setContentType("application/json");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().print(jsonResponse);
+            PatientManager pm =new PatientManager();
+            pm.delistPatient(activeUserEmail, idToDelist, conn);//remove from DB
+            us.removePatientById(idToDelist);//remove from session
+  
+
         }
         catch (SQLException sqle){
                 sqle.printStackTrace();
@@ -86,10 +72,10 @@ public class AddToShortlist extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 response.getWriter().write("Database error");
         }
-        catch(Exception  nfe){
-             response.setStatus(400);
-             response.setContentType("text/plain");
-             response.getWriter().write("Bad input --shouldn't happen!");
+        catch(NumberFormatException  nfe){//if user changed value in <select>
+                response.setStatus(400);
+                response.setContentType("text/plain");
+                response.getWriter().write("Bad input");
         }
         finally{
                 if (conn != null){

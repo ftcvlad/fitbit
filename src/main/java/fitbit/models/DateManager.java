@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package geneactiv.models;
+package fitbit.models;
 
 
 import java.sql.Connection;
@@ -32,7 +32,7 @@ public class DateManager {
             }
      //AUTHENTICATION            
             try (PreparedStatement authStmt = conn.prepareStatement( "SELECT PCpair_id "+
-                    "FROM patients "+
+                    "FROM fitbit_patients "+
                     "WHERE Clinician=? AND PCpair_id=?;")) {
                 authStmt.setString(1, activeUserEmail);
                 authStmt.setInt(2, pcpair_id);
@@ -80,7 +80,7 @@ public class DateManager {
             String datesString = datesStringBuilder.substring(0,datesStringBuilder.length()-1);
 
 
-            try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO dates(Date,filling,totalSteps,PCpair_id) "+datesString+
+            try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_dates(Date,filling,totalSteps,PCpair_id) "+datesString+
                     " ON DUPLICATE KEY UPDATE Date = Date, filling= VALUES(filling), totalSteps=VALUES(totalSteps), PCpair_id =  PCpair_id;")) {
                 for (int i=1;i<selectedData[0].length;i++){
                     stmt.setString(i,selectedData[0][i]);
@@ -101,7 +101,7 @@ public class DateManager {
             whereStr = whereStr.substring(0,whereStr.length()-2);//get rid of last ||
 
 
-            PreparedStatement stmt2 = conn.prepareStatement("SELECT Date, date_id from Dates "+whereStr+");");
+            PreparedStatement stmt2 = conn.prepareStatement("SELECT Date, date_id from fitbit_dates "+whereStr+");");
 
             for (int i=1;i<selectedData[0].length;i++){
                 stmt2.setString(i, selectedData[0][i]);
@@ -137,7 +137,7 @@ public class DateManager {
 
 
 
-                stmt3 = conn.prepareStatement("INSERT INTO stepsintime (Time,date_id,value) "+valuesString+
+                stmt3 = conn.prepareStatement("INSERT INTO fitbit_stepsintime (Time,date_id,value) "+valuesString+
                 " ON DUPLICATE KEY UPDATE value=VALUES(value);");
 
                int preparedSetIndex = 1; 
@@ -179,7 +179,7 @@ public class DateManager {
     public String[][] getDates(String[] datesToGet,String activeUserEmail, Connection conn, int pcpair_id, boolean intraday) throws SQLException, Exception{
         
         try (PreparedStatement authStmt = conn.prepareStatement( "SELECT PCpair_id "+
-                  "FROM patients "+
+                  "FROM fitbit_patients "+
                   "WHERE Clinician=? AND PCpair_id=?;")) {
               authStmt.setString(1, activeUserEmail);
               authStmt.setInt(2, pcpair_id);
@@ -204,7 +204,7 @@ public class DateManager {
      
 
         PreparedStatement stmt = conn.prepareStatement("SELECT Date, date_id, totalSteps "+
-                                      "FROM dates "+ whereStr+" ORDER BY Date ASC;");
+                                      "FROM fitbit_dates "+ whereStr+" ORDER BY Date ASC;");
 
         for (int i=0; i<datesToGet.length;i++){
             stmt.setString(i+1,datesToGet[i]);
@@ -240,7 +240,7 @@ public class DateManager {
 
                               table[0][colIndex] = date;
                               stmt2 = conn.prepareStatement("SELECT value, Time "+
-                                                            "FROM stepsintime "+
+                                                            "FROM fitbit_stepsintime "+
                                                             "WHERE date_id="+date_id+";");
 
                               ResultSet rsValues = stmt2.executeQuery();
