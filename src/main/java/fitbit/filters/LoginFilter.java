@@ -93,7 +93,7 @@ public class LoginFilter implements Filter {
                 }
                 else{
                     response.sendRedirect(loginURI);//+++
-                   
+                  // chain.doFilter(request, response);
                 }
                 
             }

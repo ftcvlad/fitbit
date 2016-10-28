@@ -28,6 +28,10 @@ import javax.servlet.http.HttpServletResponse;
 /**
  *
  * @author Vlad
+ * This called by Fitbit after user enters credentials. It reads authorization code, requests token,
+ * creates Credential and stores it and redirects to / onSuccess
+ * http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client-servlet/1.7.0-beta/com/google/api/client/extensions/servlet/auth/oauth2/AbstractAuthorizationCodeCallbackServlet.java?av=f
+ * 
  */
 @WebServlet(name = "ServletCallbackSample", urlPatterns = {"/ServletCallbackSample"})
 public class ServletCallbackSample extends AbstractAuthorizationCodeCallbackServlet {
@@ -35,6 +39,7 @@ public class ServletCallbackSample extends AbstractAuthorizationCodeCallbackServ
   @Override
   protected void onSuccess(HttpServletRequest req, HttpServletResponse resp, Credential credential)
       throws ServletException, IOException {
+      System.out.println("TOKEN SAVED!!!");
     resp.sendRedirect("/");
   }
 
@@ -42,9 +47,11 @@ public class ServletCallbackSample extends AbstractAuthorizationCodeCallbackServ
   protected void onError(
       HttpServletRequest req, HttpServletResponse resp, AuthorizationCodeResponseUrl errorResponse)
       throws ServletException, IOException {
-    // handle error
+    System.out.println("Error -- token not saved!");
   }
-
+/*
+  Fitbit will redi
+  */
   @Override
   protected String getRedirectUri(HttpServletRequest req) throws ServletException, IOException {
     GenericUrl url = new GenericUrl(req.getRequestURL().toString());
