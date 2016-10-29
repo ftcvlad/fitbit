@@ -85,31 +85,33 @@
                          <div id="addUserFormContainer">
                              <h3>Add user to DB <i>(all fields optional)</i></h3>
                              <p> </p>
-                             <label for="addNameField">Name</label>
-                             <input type="text" id="addNameField" maxlength="18"><br>
-                             <label for="addSurnameField">Surname</label>
-                             <input type="text" id="addSurnameField" maxlength="18"><br>
-                             <label for="addAgeFieldMM">Birth Date</label>
-                             <span class="sameHeightAge">
-                                 <select id="addAgeFieldMM">
-                                     <option value="1">January</option>
-                                     <option value="2">February</option>
-                                     <option value="3">March</option>
-                                     <option value="4">April</option>
-                                     <option value="5">May</option>
-                                     <option value="6">June</option>
-                                     <option value="7">July</option>
-                                     <option value="8">August</option>
-                                     <option value="9">September</option>
-                                     <option value="10">October</option>
-                                     <option value="11">November</option>
-                                     <option value="12">December</option>
-                                 </select>
-                                 <input type="text" maxlength="2" placeholder="dd" id="addAgeFieldDD">
-                                 <input type="text" maxlength="4" placeholder="yyyy" id="addAgeFieldYYYY"><br></span>
-                            
-                             <button type="button" id="addNewPatientBtn" onclick="getAuthUrl()">Add</button>
-                             
+                             <form action="${pageContext.request.contextPath}/ServletSample" method="POST" onsubmit="return verifyDate();">
+                                <label for="addNameField">Name</label>
+                                <input type="text" id="addNameField" maxlength="18" name="firstName"><br>
+                                <label for="addSurnameField">Surname</label>
+                                <input type="text" id="addSurnameField" maxlength="18" name="secondName"><br>
+                                <label for="addAgeFieldMM">Birth Date</label>
+                                <span class="sameHeightAge">
+                                    <select id="addAgeFieldMM" name="month">
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3">March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                    <input type="text" maxlength="2" placeholder="dd" id="addAgeFieldDD" name="day">
+                                    <input type="text" maxlength="4" placeholder="yyyy" id="addAgeFieldYYYY" name="year"><br></span>
+
+
+                                <button type="submit" id="addNewPatientBtn">Add</button>
+                             </form>
                          </div>
                         
                   

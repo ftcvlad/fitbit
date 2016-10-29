@@ -20,29 +20,29 @@ public class PatientManager {
     
     public void savePatient(String activeUserEmail,Patient patient, Connection conn) throws SQLException{
       
-          PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_patients( Clinician, birthDate, name, surname,shortlisted)"+
-                                           " VALUES (?,?,?,?,1);", 1);
+          PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_patients( Clinician, userID, birthDate, name, surname,shortlisted)"+
+                                           " VALUES (?,?,?,?,?,1);");
                                                                    
-          stmt.setString(1, activeUserEmail);      
-          stmt.setString(2, patient.getBirthDate());    
-          stmt.setString(3, patient.getName());  
-          stmt.setString(4, patient.getSurname()); 
+          stmt.setString(1, activeUserEmail);   
+          stmt.setString(2, patient.getFitbitId()); 
+          stmt.setString(3, patient.getBirthDate());    
+          stmt.setString(4, patient.getName());  
+          stmt.setString(5, patient.getSurname()); 
       
           stmt.execute();
-          
-           
-          ResultSet  rs = stmt.getGeneratedKeys();
-          rs.next();
 
-          patient.setId(rs.getInt(1));//last_inserted_id 
-          
     }
+    
+    
+    
+    
+    
     
     
      public ArrayList<Patient> getShortlistedPatientsAndDates(String username, Connection conn) throws SQLException{
         
  
-        PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate"+
+        PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate, fitbit_patients.userID"+
                                             " FROM fitbit_dates"+
                                             " RIGHT JOIN fitbit_patients ON (fitbit_dates.PCpair_id=fitbit_patients.PCpair_id)"+
                                             " WHERE fitbit_patients.Clinician=? AND fitbit_patients.shortlisted=1"+
@@ -61,7 +61,7 @@ public class PatientManager {
                 nameCondition = "AND patients.name=?";
             }
 
-            PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate"+
+            PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate, fitbit_patients.userID"+
                                               " FROM fitbit_dates"+
                                               " RIGHT JOIN fitbit_patients ON (fitbit_dates.PCpair_id=fitbit_patients.PCpair_id)"+
                                               " WHERE fitbit_patients.Clinician=? "+nameCondition+
@@ -95,11 +95,12 @@ public class PatientManager {
 
                 if (PCpair_id !=  previousUserId  ){//1ST PUT PATIENT CASE
 
-                    nextPatient.setId(previousUserId);
+                   
                     rs.previous();
                     nextPatient.setName(rs.getString(4));
                     nextPatient.setSurname(rs.getString(5));
                     nextPatient.setBirthDate(rs.getString(6));
+                    nextPatient.setFitbitId(rs.getString(7));
                     rs.next();
 
                     myPatients.add(nextPatient);
@@ -114,10 +115,11 @@ public class PatientManager {
                 }
 
                 if (rs.isLast()){//2nd PUT PATIENT CASE
-                   nextPatient.setId(PCpair_id);
+                   
                    nextPatient.setName(rs.getString(4));
                    nextPatient.setSurname(rs.getString(5));
                    nextPatient.setBirthDate(rs.getString(6));
+                   nextPatient.setFitbitId(rs.getString(7));
                    myPatients.add(nextPatient);
                 }
               
@@ -146,15 +148,15 @@ public class PatientManager {
    
     }
     
-    public int delistPatient(String activeUserEmail, int idToDelist,Connection conn ) throws SQLException{
+    public int delistPatient(String activeUserEmail, String fitbitidToDelist,Connection conn ) throws SQLException{
         
         
         PreparedStatement stmt = conn.prepareStatement("UPDATE fitbit_patients "+
                 " SET shortlisted=0"+
-                " WHERE Clinician=? AND PCpair_id=?");
+                " WHERE Clinician=? AND userID=?");
                 
         stmt.setString(1,activeUserEmail);    
-        stmt.setInt(2,idToDelist);
+        stmt.setString(2,fitbitidToDelist);
         
         return stmt.executeUpdate();
     }
@@ -165,13 +167,13 @@ public class PatientManager {
         if (addedPatients.size()>0){
                 String inString="";
                 for (Patient p:addedPatients){
-                    inString+=p.getId()+",";
+                    inString+=p.getFitbitId()+",";
                 }
                 inString = inString.substring(0,inString.length()-1);
 
                 PreparedStatement stmt = conn.prepareStatement("UPDATE fitbit_patients "+
                         " SET shortlisted=1"+
-                        " WHERE Clinician=? AND ((PCpair_id) IN ("+inString+"))");
+                        " WHERE Clinician=? AND ((userID) IN ("+inString+"))");
 
                 stmt.setString(1,activeUserEmail);    
 

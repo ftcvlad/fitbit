@@ -67,7 +67,7 @@ public class AddToShortlist extends HttpServlet {
             ArrayList<Patient> addedPatients = us.addNonRepeatingPatients(selectedPatientsForEnlist);//add to session
             
             for (Patient o : addedPatients){
-                System.out.println("--> " +o.getId());
+                System.out.println("--> " +o.getFitbitId());
             }
             
             

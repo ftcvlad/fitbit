@@ -77,9 +77,9 @@ public class User {
         stmt.executeUpdate();
     }
 
-    public void removePatientById(int id){
+    public void removePatientById(String fitbitId){
         for (int i=0;i<allPatients.size();i++){
-            if (allPatients.get(i).getId() == id){
+            if (allPatients.get(i).getFitbitId().equals(fitbitId)){
                     allPatients.remove(i);
                     break;
             }
@@ -92,7 +92,7 @@ public class User {
         for (String nextId: ids){
           
             for (int i = allPatients.size()-1; i >= 0; i--){
-                    if (allPatients.get(i).getId() == Integer.parseInt(nextId)){
+                    if (allPatients.get(i).getFitbitId().equals(nextId) ){
                         allPatients.remove(i);
                         break;
                     }

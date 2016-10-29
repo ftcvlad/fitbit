@@ -56,13 +56,13 @@ public class RemoveFromShortlist extends HttpServlet {
         
       
         try {
-            int idToDelist = Integer.parseInt(request.getParameter("id"));
+            String fitbitidToDelist = request.getParameter("id");
             conn= dataSource.getConnection();
          
             
             PatientManager pm =new PatientManager();
-            pm.delistPatient(activeUserEmail, idToDelist, conn);//remove from DB
-            us.removePatientById(idToDelist);//remove from session
+            pm.delistPatient(activeUserEmail, fitbitidToDelist, conn);//remove from DB
+            us.removePatientById(fitbitidToDelist);//remove from session
   
 
         }

@@ -105,7 +105,7 @@ public class AddPatient extends HttpServlet {
             response.setCharacterEncoding("UTF-8");
             
             String alias = patient.getName()+" "+patient.getSurname();
-            response.getWriter().print("{\"id\":"+patient.getId()+",\"alias\":\""+ alias+"\"}");
+            response.getWriter().print("{\"id\":"+patient.getFitbitId()+",\"alias\":\""+ alias+"\"}");
            
            
 

@@ -12,16 +12,28 @@ import java.util.ArrayList;
  */
 public class Patient {
     
-    ArrayList<String> fullDates = new ArrayList<String>();
-    ArrayList<String> partDates = new ArrayList<String>();
+    ArrayList<String> fullDates = new ArrayList<>();
+    ArrayList<String> partDates = new ArrayList<>();
+    ArrayList<String> nosyncDates = new ArrayList<>();
+    ArrayList<String> nodataDates = new ArrayList<>();
     String name;
     String surname;
     String birthDate;
-    int id;
+    String fitbitId;
+
+  
     
     
     public Patient(){
         
+    }
+
+    public String getFitbitId() {
+        return fitbitId;
+    }
+
+    public void setFitbitId(String fitbitId) {
+        this.fitbitId = fitbitId;
     }
     
 
@@ -33,13 +45,18 @@ public class Patient {
         else if (filling.equals("part")){
             partDates.add(date);
         }
+        else if (filling.equals("noSync")){
+            nosyncDates.add(date);
+        }
+        else if (filling.equals("noData")){
+            nodataDates.add(date);
+        }
+        
     }
     
     
     
-    public void setId(int id){
-       this.id = id;
-    }
+   
     
     public void setName(String name){
         this.name = name;
@@ -57,9 +74,7 @@ public class Patient {
         return this.surname ;
     }
     
-    public int getId(){
-        return this.id ;
-    }
+   
     
     public ArrayList<String> getFullDates(){
         return this.fullDates ;
@@ -68,6 +83,23 @@ public class Patient {
     
     public ArrayList<String> getPartDates(){
         return this.partDates ;
+    }
+    
+    
+     public ArrayList<String> getNosyncDates() {
+        return nosyncDates;
+    }
+
+    public void setNosyncDates(ArrayList<String> nosyncDates) {
+        this.nosyncDates = nosyncDates;
+    }
+
+    public ArrayList<String> getNodataDates() {
+        return nodataDates;
+    }
+
+    public void setNodataDates(ArrayList<String> nodataDates) {
+        this.nodataDates = nodataDates;
     }
     
     
@@ -95,7 +127,7 @@ public class Patient {
         }
 
         Patient that = (Patient)c;
-        return this.id == that.id;
+        return this.fitbitId.equals(that.fitbitId);
     }
     
 }

@@ -19,7 +19,7 @@ $(function () {
                               
                var table = new google.visualization.Table(document.getElementById('tableHolder'));
                
-               $("#listDbUsersBtn").click(function(){findSavedUsers(table, data);});
+               $("#listDbUsersBtn").click(function(){findSavedPatients(table, data);});
                $("#totalDeleteBtn").click(function(){deleteSelectedUser(table, data); });
                $("#addToShortlistBtn").click(function(){addToShortlist(table, data)});
 
@@ -724,50 +724,118 @@ function incrementDate(from_date) {
 
 //----------------------------------------------------------------------FOR FITBIT------------------------------------------------------------
 
+//ADD NEW PATIENT
+function verifyDate(){
+
+           var monthNum = parseInt($("#addAgeFieldMM").val());
+           var dayStr = $("#addAgeFieldDD").val();
+           var yearStr = $("#addAgeFieldYYYY").val();
+           
+           try{ 
+                validateDate(yearStr, monthNum, dayStr);
+                return true;
+           }
+           catch(e){
+               $('#addUserFormContainer > p:eq(0)').text(e);
+               return false;//form not submitted
+           }
+}
+
+
+//FIND PATIENTS
+
+function findSavedPatients(table, datatable){
+        if (ajaxLocked){return;}
+        $("#totalDeleteBtn").prop("disabled",true);
+        $("#addToShortlistBtn").prop("disabled",true);
+
+
+
+        $("#tableMessage").text("Retrieving patient list...");
+
+
+
+        jQuery.ajax({
+            method: "get",
+            url: "findPatients",
+            data: {name: $("#nameForFindInput").val()},
+            success: function (response, textStatus, jqXHR) {
+                datatable.removeRows(0, datatable.getNumberOfRows());
+                for (var i = 0; i < response.length; i++) {
+                    datatable.addRow([response[i].name, response[i].surname, response[i].birthDate, response[i].fitbitId,
+                        JSON.stringify({fullDates: response[i].fullDates, partDates: response[i].partDates,nosyncDates: response[i].nosyncDates,nodataDates: response[i].nodataDates })]);
+                }
+                var view = new google.visualization.DataView(datatable);
+                view.setColumns([0, 1, 2]); //here you set the columns you want to display
+                table.draw(view, {width: '100%', cssClassNames: {headerRow: "tableHeader", tableRow: "tableRow", oddTableRow: "oddRow", headerCell: "headerCell"}});
+                $("#tableMessage").text("Done");
+            },
+            error: function (jqXHR, errorStatus, errorThrown) {
+
+                if (jqXHR.responseText === "Session expired") {
+                    window.location = "Login";
+                }
+                $("#tableMessage").text(jqXHR.responseText);
+
+            },
+            complete: function () {
+                ajaxLocked = false;
+            }
+        });    
+         
+     
+}
+
+
+
+
+
+
+
 
 
 //FIND USERS
 
-function findSavedUsers(table, datatable){
- $("#totalDeleteBtn").prop("disabled",true);
- $("#addToShortlistBtn").prop("disabled",true);
+//function findSavedUsers(table, datatable){
+// $("#totalDeleteBtn").prop("disabled",true);
+// $("#addToShortlistBtn").prop("disabled",true);
+//
+//
+//
+// $("#tableMessage").text("Retrieving patient list...");
+//  google.script.run
+//            .withSuccessHandler(updateTable)
+//            .withFailureHandler(updateTableFail)
+//            .withUserObject({table:table, datatable: datatable})
+//            .findSavedUsers($("#nameForFindInput").val());
+//}
 
 
+//function updateTableFail(error){
+//    $("#tableMessage").text(error.message);
+//
+//}
 
- $("#tableMessage").text("Retrieving patient list...");
-  google.script.run
-            .withSuccessHandler(updateTable)
-            .withFailureHandler(updateTableFail)
-            .withUserObject({table:table, datatable: datatable})
-            .findSavedUsers($("#nameForFindInput").val());
-}
-
-
-function updateTableFail(error){
-    $("#tableMessage").text(error.message);
-
-}
-
-function updateTable(response, args){
-              
-               args.datatable.removeRows(0,  args.datatable.getNumberOfRows());
-               
-               
-            
-               for (var i=0;i<response.length;i++){
-                    args.datatable.addRow([response[i].name, response[i].surname, response[i].birth,response[i].userID, JSON.stringify(response[i].fillings)] ); 
-               }
-               
-                var view = new google.visualization.DataView(args.datatable);
-                view.setColumns([0,1,2]); //here you set the columns you want to display
-               
-              
-               args.table.draw(view, {width: '100%',  cssClassNames:{headerRow : "tableHeader", tableRow: "tableRow", oddTableRow: "oddRow", headerCell  :"headerCell" }});
-
-             
-               $("#tableMessage").text("Done");
-
-}
+//function updateTable(response, args){
+//              
+//               args.datatable.removeRows(0,  args.datatable.getNumberOfRows());
+//               
+//               
+//            
+//               for (var i=0;i<response.length;i++){
+//                    args.datatable.addRow([response[i].name, response[i].surname, response[i].birth,response[i].userID, JSON.stringify(response[i].fillings)] ); 
+//               }
+//               
+//                var view = new google.visualization.DataView(args.datatable);
+//                view.setColumns([0,1,2]); //here you set the columns you want to display
+//               
+//              
+//               args.table.draw(view, {width: '100%',  cssClassNames:{headerRow : "tableHeader", tableRow: "tableRow", oddTableRow: "oddRow", headerCell  :"headerCell" }});
+//
+//             
+//               $("#tableMessage").text("Done");
+//
+//}
 
 //DELETE USER
 
@@ -915,41 +983,10 @@ function updateListsAdd(idsToAdd){
 
 
 
-function getAuthUrl(){
-   
-           var name = $("#addNameField").val();
-           var surname = $("#addSurnameField").val();
-           
-           var monthNum = parseInt($("#addAgeFieldMM").val());
-           var dayStr = $("#addAgeFieldDD").val();
-           var yearStr = $("#addAgeFieldYYYY").val();
-           
-           var dataToSave;
-           try{ 
-               dataToSave = validateDate(yearStr, monthNum, dayStr);
-               dataToSave.name = name;
-               dataToSave.surname = surname;
-           }
-           catch(e){
-               $('#addUserFormContainer > p:eq(0)').text(e);
-           }
-
-          google.script.run
-            .withSuccessHandler(displayLink)
-            .withFailureHandler(getLinkFailed)
-            .sendAuthorizationUrl(dataToSave);
-     
-}
-
-function getLinkFailed(error){
-     $('#tabs-1').html(error.message);
-
-}
 
 
-function displayLink(obj){
-       $('#tabs-1').html('<a href='+obj.url+' target="_top">Click to authorize '+obj.nameSurname+' </a>');
-}
+
+
 
 
 

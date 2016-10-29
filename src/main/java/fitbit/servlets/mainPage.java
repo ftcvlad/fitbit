@@ -37,14 +37,16 @@ public class mainPage extends HttpServlet {
         
         for (int i=0;i<us.allPatients.size();i++){
             String fullName = us.allPatients.get(i).getName()+" "+us.allPatients.get(i).getSurname();
-            int id = us.allPatients.get(i).getId();
+            String fitbitId = us.allPatients.get(i).getFitbitId();
             
             String fullDates = new Gson().toJson(us.allPatients.get(i).getFullDates()); 
             String partDates = new Gson().toJson(us.allPatients.get(i).getPartDates()); 
+            String nosyncDates = new Gson().toJson(us.allPatients.get(i).getNosyncDates());
+            String nodataDates = new Gson().toJson(us.allPatients.get(i).getNodataDates());
             
            
             //'  {"full":["date1","date2"...],"part":[]}  '
-            htmlString+= "<option value=\""+id+"\"  data-foo=\'{\"full\":"+fullDates+",\"part\":"+partDates+"}\'>"+fullName+"</option>";
+            htmlString+= "<option value=\""+fitbitId+"\"  data-foo=\'{\"full\":"+fullDates+",\"part\":"+partDates+",\"noData\":"+nodataDates+",\"noSync\":"+nosyncDates+"}\'>"+fullName+"</option>";
 
         }
         

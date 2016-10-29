@@ -25,21 +25,25 @@ public class DateManager {
     
     
     
-    public HashMap<String,ArrayList<String>>  saveDates(String activeUserEmail, Connection conn, int pcpair_id, String[][]  selectedData) throws SQLException, Exception{
+    public HashMap<String,ArrayList<String>>  saveDates(String activeUserEmail, Connection conn, String fitbitId, String[][]  selectedData) throws SQLException, Exception{
         
             if (selectedData.length!=1441){
                      throw new Exception("Bad input: != 1441");    
             }
-     //AUTHENTICATION            
+     //AUTHENTICATION  
+            int pcpair_id;
             try (PreparedStatement authStmt = conn.prepareStatement( "SELECT PCpair_id "+
                     "FROM fitbit_patients "+
-                    "WHERE Clinician=? AND PCpair_id=?;")) {
+                    "WHERE Clinician=? AND userID=?;")) {
                 authStmt.setString(1, activeUserEmail);
-                authStmt.setInt(2, pcpair_id);
+                authStmt.setString(2, fitbitId);
                 ResultSet authRs = authStmt.executeQuery();
 
-                
-                if (authRs.next()==false){//no user-clinician (again, user modified some javascript)
+
+                if (authRs.next()!=false){//no user-clinician (again, user modified some javascript)
+                    pcpair_id = authRs.getInt(1);
+                }
+                else{
                     throw new Exception("Bad input: Current clinician cannot save for selected patient");    
                 }
             }

@@ -56,16 +56,18 @@ public class SaveDates extends HttpServlet {
          
             conn= dataSource.getConnection();
          
-            int pcpair_id =  Integer.parseInt(request.getParameter("id"));
+            String fitbitId =  request.getParameter("id");
             String[][] selectedData =  new Gson().fromJson(request.getParameter("data"), String[][].class);
 
             DateManager dm = new DateManager();
-            HashMap<String, ArrayList<String>> hm = dm.saveDates(activeUserEmail,conn,pcpair_id,selectedData);
+            HashMap<String, ArrayList<String>> hm = dm.saveDates(activeUserEmail,conn,fitbitId,selectedData);
             
             Patient targetPatient = null;
             for (int i=0; i<us.allPatients.size();i++){
-                if (us.allPatients.get(i).getId()==pcpair_id){
+                if (us.allPatients.get(i).getFitbitId().equals(fitbitId)){
                     targetPatient = us.allPatients.get(i);
+                    
+                    //A TON OF PAIN FOR SAVE DATES
                     ArrayList<String> currentPartDates = targetPatient.getPartDates();
                     ArrayList<String> addedPartDates = hm.get("part");
                     
