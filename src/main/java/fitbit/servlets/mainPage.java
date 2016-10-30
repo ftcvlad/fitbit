@@ -46,7 +46,7 @@ public class mainPage extends HttpServlet {
             
            
             //'  {"full":["date1","date2"...],"part":[]}  '
-            htmlString+= "<option value=\""+fitbitId+"\"  data-foo=\'{\"full\":"+fullDates+",\"part\":"+partDates+",\"noData\":"+nodataDates+",\"noSync\":"+nosyncDates+"}\'>"+fullName+"</option>";
+            htmlString+= "<option value=\""+fitbitId+"\"  data-foo=\'{\"full\":"+fullDates+",\"part\":"+partDates+",\"nodata\":"+nodataDates+",\"nosync\":"+nosyncDates+"}\'>"+fullName+"</option>";
 
         }
         

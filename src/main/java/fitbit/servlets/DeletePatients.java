@@ -5,15 +5,23 @@
  */
 package fitbit.servlets;
 
+import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
+import com.google.api.client.auth.oauth2.BearerToken;
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.auth.oauth2.StoredCredential;
+import com.google.api.client.http.BasicAuthentication;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.gson.Gson;
-import fitbit.stores.Patient;
 import fitbit.models.PatientManager;
 import fitbit.models.User;
+import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.servlet.ServletException;
@@ -59,6 +67,24 @@ public class DeletePatients extends HttpServlet {
             PatientManager pm =new PatientManager();
             pm.deletePatients(activeUserEmail,conn,idsToDel);//delete from DB
             us.removePatientById(idsToDel);//remove from session
+            //delete from token store
+            
+            AuthorizationCodeFlow flow = initializeFlow();
+            
+            for (String fitId : idsToDel) {
+                flow.getCredentialDataStore().delete(activeUserEmail+fitId);
+            }
+            
+            Credential credential = flow.loadCredential(activeUserEmail+"4PDGJ9");
+            if (credential != null && credential.getAccessToken() != null) {
+                System.out.println("user 1 found" );
+            }
+           
+            credential = flow.loadCredential(activeUserEmail+"3VD94D");
+            if (credential != null && credential.getAccessToken() != null) {
+                System.out.println("user 2 found" );
+            }
+            
         }
         catch (SQLException sqle){
                 sqle.printStackTrace();
@@ -78,4 +104,35 @@ public class DeletePatients extends HttpServlet {
                 }
         }
     }
+
+
+    protected AuthorizationCodeFlow initializeFlow() throws IOException {
+
+
+        AuthorizationCodeFlow.Builder acfb = new AuthorizationCodeFlow.Builder(
+                        BearerToken.authorizationHeaderAccessMethod(),
+                        new NetHttpTransport(),
+                        new JacksonFactory(),
+                        new GenericUrl("https://api.fitbit.com/oauth2/token"),
+                        new BasicAuthentication("227T4W", "54b87a495109c3c10c06bf56754d6cc3"),
+                        "227T4W",
+                        "https://www.fitbit.com/oauth2/authorize");
+
+        acfb.setScopes(Arrays.asList("activity","settings"));
+
+        FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
+        acfb.setCredentialDataStore(StoredCredential.getDefaultDataStore(ff));
+        return acfb.build();
+    
+   }
+
+
+
+
+
+
 }
+
+
+
+  

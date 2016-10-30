@@ -56,19 +56,12 @@ public class AddToShortlist extends HttpServlet {
         String activeUserEmail = us.getUsername();
         
         String json = request.getParameter("patients");
-     
-        
-        
-        
-      
+
 
         try {
             ArrayList<Patient> selectedPatientsForEnlist = new Gson().fromJson(json, new TypeToken<ArrayList<Patient>>(){}.getType());
             ArrayList<Patient> addedPatients = us.addNonRepeatingPatients(selectedPatientsForEnlist);//add to session
-            
-            for (Patient o : addedPatients){
-                System.out.println("--> " +o.getFitbitId());
-            }
+
             
             
             conn= dataSource.getConnection();

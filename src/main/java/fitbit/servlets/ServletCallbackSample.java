@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -140,12 +141,14 @@ public class ServletCallbackSample extends HttpServlet  {
         try {
             conn= dataSource.getConnection();
             PatientManager pm = new PatientManager();
-            pm.savePatient(clinicianUsername, npi,conn);
-            us.allPatients.add(npi);
+            Patient p = pm.savePatient(clinicianUsername, npi,conn);
+            
+            us.addNewPatient(p);
+            
             
             
             //SAVE TOKEN TO TOKEN STORE (FILE ON SERVER)
-            Credential credential = flow.createAndStoreCredential(tokenResponse, patientFitbitId);
+            Credential credential = flow.createAndStoreCredential(tokenResponse, clinicianUsername+patientFitbitId);
             onSuccess(req, resp, credential);
             
          }

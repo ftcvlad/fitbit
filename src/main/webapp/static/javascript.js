@@ -247,7 +247,7 @@ var datepickerBeforeShowDay = function (date) {
       
        
         if (dayTypesObj!==null  ){
-            if (dayTypesObj["noData"].indexOf(str)>-1){
+            if (dayTypesObj["nodata"].indexOf(str)>-1){
                 return [true, "noData", ''];
             }
             else if (dayTypesObj["full"].indexOf(str)>-1){
@@ -256,7 +256,7 @@ var datepickerBeforeShowDay = function (date) {
             else if (dayTypesObj["part"].indexOf(str)>-1){
                 return [true, "part", ''];
             }
-            else if (dayTypesObj["noSync"].indexOf(str)>-1){
+            else if (dayTypesObj["nosync"].indexOf(str)>-1){
                 return [true, "noSync", ''];
             }
         }
@@ -754,7 +754,7 @@ function findSavedPatients(table, datatable){
         $("#tableMessage").text("Retrieving patient list...");
 
 
-
+        ajaxLocked = true;
         jQuery.ajax({
             method: "get",
             url: "findPatients",
@@ -787,113 +787,69 @@ function findSavedPatients(table, datatable){
 }
 
 
+//ADD TO SHORTLIST
 
+function addToShortlist(table, datatable){
+        if (ajaxLocked){return;}
+        $("#tableMessage").text("Adding selected users to shortlist...");
+        var allUsers = [];
 
+        var allSelected =  table.getSelection();
+        for (var i=0; i<allSelected.length; i++){
 
+              var row = allSelected[i].row;
 
+              var fitbitId = datatable.getValue(row,3);
+              var name = datatable.getValue(row,0);
+              var surname = datatable.getValue(row,1);
+              var birthDate = datatable.getValue(row,2);
+              var fillings = datatable.getValue(row,4);
 
+              var dates = JSON.parse(fillings);
+              allUsers.push({fitbitId: fitbitId, name: name,surname:surname, birthDate:birthDate,fullDates: dates.fullDates, partDates: dates.partDates, nosyncDates:dates.nosyncDates, nodataDates:dates.nodataDates  });
 
-
-//FIND USERS
-
-//function findSavedUsers(table, datatable){
-// $("#totalDeleteBtn").prop("disabled",true);
-// $("#addToShortlistBtn").prop("disabled",true);
-//
-//
-//
-// $("#tableMessage").text("Retrieving patient list...");
-//  google.script.run
-//            .withSuccessHandler(updateTable)
-//            .withFailureHandler(updateTableFail)
-//            .withUserObject({table:table, datatable: datatable})
-//            .findSavedUsers($("#nameForFindInput").val());
-//}
-
-
-//function updateTableFail(error){
-//    $("#tableMessage").text(error.message);
-//
-//}
-
-//function updateTable(response, args){
-//              
-//               args.datatable.removeRows(0,  args.datatable.getNumberOfRows());
-//               
-//               
-//            
-//               for (var i=0;i<response.length;i++){
-//                    args.datatable.addRow([response[i].name, response[i].surname, response[i].birth,response[i].userID, JSON.stringify(response[i].fillings)] ); 
-//               }
-//               
-//                var view = new google.visualization.DataView(args.datatable);
-//                view.setColumns([0,1,2]); //here you set the columns you want to display
-//               
-//              
-//               args.table.draw(view, {width: '100%',  cssClassNames:{headerRow : "tableHeader", tableRow: "tableRow", oddTableRow: "oddRow", headerCell  :"headerCell" }});
-//
-//             
-//               $("#tableMessage").text("Done");
-//
-//}
-
-//DELETE USER
-
-function deleteSelectedUser(table, datatable){
-
-      $("#tableMessage").text("Deleting selected users...");
-      var allUserIds = [];
-      
-      var allSelected =  table.getSelection();
-      for (var i=0; i<allSelected.length; i++){
-              
-              allUserIds.push(datatable.getValue(allSelected[i].row,3));
-            
-      }
-     
-     
-      google.script.run
-            .withSuccessHandler(updateListsRemove)
-            .withFailureHandler(deleteUserFail)
-            .withUserObject({datatable:datatable, table:table})
-            .removeFromDb(allUserIds);
-}
-
-
-function deleteUserFail(error){
-      $("#tableMessage").text(error.message);
-}
-
-function updateListsRemove(idsToRemove, args){
-
-    if (idsToRemove.length>0){
-        for (var i=0;i<idsToRemove.length;i++){
-            $('#userIDselect').find('option[value="'+idsToRemove[i]+'"]').remove(); 
         }
-        $("#userIDselect").selectmenu("destroy").selectmenu({width:150});
+     
        
-        if (args!==undefined){
+        ajaxLocked = true;
+        jQuery.ajax({
+            method: "post",
+            url: "addToShortlist",
+            data: {patients:JSON.stringify(allUsers)},
+            success: function (response, textStatus, jqXHR) {
+                updateSelectEnlist(response);
+            },
+            error: function (jqXHR, errorStatus, errorThrown) {
+                if (jqXHR.responseText === "Session expired") {
+                    window.location = "Login";
+                }
+                $("#tableMessage").text(jqXHR.responseText);
+            },
+            complete: function () {
+                ajaxLocked = false;
+            }
+        });   
+  
+  
+}
 
 
-               for (var j=0; j< args.datatable.getNumberOfRows();j++){
-                   var nextId = args.datatable.getValue(j,3);
-                   if (idsToRemove.indexOf(nextId)>=0){
-                       args.datatable.removeRow(j);
-                       j--;
-                   }
-               
-               }
-
-                var view = new google.visualization.DataView(args.datatable);
-                view.setColumns([0,1,2]); //here you set the columns you want to display
-               
-             
-               args.table.draw(view, {width: '100%',  cssClassNames:{headerRow : "tableHeader", tableRow: "tableRow", oddTableRow: "oddRow" }});
-               
-               $("#totalDeleteBtn").prop("disabled",true);
-               $("#addToShortlistBtn").prop("disabled",true);
-        }
-
+function updateSelectEnlist(patientsToAdd){
+    
+    if (patientsToAdd.length>0){
+    
+        $.each(patientsToAdd, function (i, nextPatient) {
+        
+        
+            $('#userIDselect').prepend($('<option>', { 
+                    value: nextPatient.fitbitId,
+                    text : nextPatient.name+" "+nextPatient.surname,
+                    "data-foo" :  JSON.stringify({"full":nextPatient.fullDates, "part":nextPatient.partDates, "nosync":nextPatient.nosyncDates, "nodata":nextPatient.nodataDates}),
+                    selected: "selected"
+                }));
+        });
+        
+        $("#userIDselect").selectmenu("destroy").selectmenu({width:150});
     }
     $("#tableMessage").text("Done"); 
 }
@@ -902,82 +858,124 @@ function updateListsRemove(idsToRemove, args){
 //REMOVE FROM SHORTLIST
 
 
-
-
 function removeFromShortList(){
-
-
-
-    console.log("start:"+ Date.now());
-
-     var userID = $("#userIDselect").val();
-     if (userID===null){
-          var errorSpanFit = $("#errorSpanFit");
-          setStatus(errorSpanFit, "No id to remove!", "ui-state-error");
-          
+    if (ajaxLocked){return;}
+    
+     var fitbitId = $("#userIDselect").val();
+     var errorSpanFit = $("#errorSpanFit");
+     if (fitbitId===null){
+          setStatus(errorSpanFit, "No id to remove!", "ui-state-error");  
      }
      else{
-      google.script.run
-            .withSuccessHandler(updateListsRemove)
-            .removeFromShortList(userID);
-     
-     }
+        ajaxLocked = true;
 
-}
-
-
-//ADD TO SHORTLIST
-
-function addToShortlist(table, datatable){
-
-      $("#tableMessage").text("Adding selected users to shortlist...");
-      var allUsers = [];
-      
-      var allSelected =  table.getSelection();
-      for (var i=0; i<allSelected.length; i++){
-              
-              var row = allSelected[i].row;
-              
-              var id = datatable.getValue(row,3);
-              var name = datatable.getValue(row,0);
-              var surname = datatable.getValue(row,1);
-              var fillings = datatable.getValue(row,4);
-            
-              allUsers.push({id: id, name: name,surname:surname, fillings: fillings  });
-            
-      }
-     
-     
-      google.script.run
-            .withSuccessHandler(updateListsAdd)
-            .addToShortList(allUsers);
-
-
-}
-
-
-function updateListsAdd(idsToAdd){
-    
-    if (idsToAdd.length>0){
-    
-        $.each(idsToAdd, function (i, item) {
-        
-              console.log((typeof item.fillings) + (item.fillings));
-            $('#userIDselect').prepend($('<option>', { 
-                    value: item.id,
-                    text : item.name+" "+item.surname,
-                    "data-foo" :  item.fillings,
-                    selected: "selected"
-                }));
+        jQuery.ajax({
+            method: "post",
+            url: "removeFromShortlist",
+            data: {fitbitId:fitbitId},
+            success: function (response, textStatus, jqXHR) {
+                 $('#userIDselect').find('option[value="'+fitbitId+'"]').remove(); 
+                 $("#userIDselect").selectmenu("destroy").selectmenu({width:150});              
+                 errorSpanFit.text("Done");
+            },
+            error: function (jqXHR, errorStatus, errorThrown) {
+                if (jqXHR.responseText === "Session expired") {
+                    window.location = "Login";
+                }
+                 errorSpanFit.text(jqXHR.responseText);
+            },
+            complete: function () {
+                ajaxLocked = false;
             }
-        );
+        });  
         
-        $("#userIDselect").selectmenu("destroy").selectmenu({width:150});
-    }
-    
-     $("#tableMessage").text("Done"); 
-
+     }
 }
+
+
+//DELETE USER
+
+function deleteSelectedUser(table, datatable){
+        if (ajaxLocked){return;}
+        $("#tableMessage").text("Deleting selected users...");
+        var allUserIds = [];
+
+        var allSelected =  table.getSelection();
+        for (var i=0; i<allSelected.length; i++){
+           
+            allUserIds.push(datatable.getValue(allSelected[i].row,3));
+        }
+        
+        
+        ajaxLocked = true;
+
+        jQuery.ajax({
+            method: "post",
+            url: "deletePatients",
+            data: {idArray:JSON.stringify(allUserIds)},
+            success: function (response, textStatus, jqXHR) {
+                updateTableListRemove(allUserIds,datatable,table);
+            },
+            error: function (jqXHR, errorStatus, errorThrown) {
+                if (jqXHR.responseText === "Session expired") {
+                    window.location = "Login";
+                }
+                 $("#tableMessage").text(jqXHR.responseText);
+            },
+            complete: function () {
+                ajaxLocked = false;
+            }
+        });  
+}
+
+
+function updateTableListRemove(idsToRemove, datatable, table){
+
+    if (idsToRemove.length>0){
+        for (var i=0;i<idsToRemove.length;i++){
+            $('#userIDselect').find('option[value="'+idsToRemove[i]+'"]').remove(); 
+        }
+        $("#userIDselect").selectmenu("destroy").selectmenu({width:150});
+       
+        
+        for (var j=0; j< datatable.getNumberOfRows();j++){
+            var nextId = datatable.getValue(j,3);
+            if (idsToRemove.indexOf(nextId)>=0){
+                datatable.removeRow(j);
+                j--;
+            }
+
+        }
+
+         var view = new google.visualization.DataView(datatable);
+         view.setColumns([0,1,2]); 
+
+
+        table.draw(view, {width: '100%',  cssClassNames:{headerRow : "tableHeader", tableRow: "tableRow", oddTableRow: "oddRow" }});
+
+        $("#totalDeleteBtn").prop("disabled",true);
+        $("#addToShortlistBtn").prop("disabled",true);
+        
+
+    }
+    $("#tableMessage").text("Done"); 
+    
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -86,7 +86,7 @@ public class User {
         }   
     }
     
-    public void removePatientById(String[] ids) throws NumberFormatException{
+    public void removePatientById(String[] ids){
         
         
         for (String nextId: ids){
@@ -112,6 +112,22 @@ public class User {
          }
        
          return addedPatients;
+         
+     }
+     
+     
+     public void addNewPatient(Patient newPatient){
+         
+         if (!allPatients.contains(newPatient)){
+             allPatients.add(newPatient);
+         }
+         else{
+             int ind = allPatients.indexOf(newPatient);
+             Patient sameP = allPatients.get(ind);
+             sameP.setName(newPatient.getName());
+             sameP.setSurname(newPatient.getSurname());
+             sameP.setBirthDate(newPatient.getBirthDate());
+         }
          
      }
     

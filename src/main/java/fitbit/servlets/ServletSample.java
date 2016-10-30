@@ -57,7 +57,8 @@ public class ServletSample extends HttpServlet {
 //          System.out.println("user 1 found" );
 //      }
       
-     
+
+
       
      
       
@@ -123,16 +124,23 @@ public class ServletSample extends HttpServlet {
 
 
   protected AuthorizationCodeFlow initializeFlow() throws IOException {
-    return new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(),
-        new NetHttpTransport(),
-        new JacksonFactory(),
-        new GenericUrl("https://api.fitbit.com/oauth2/token"),
-        new BasicAuthentication("227T4W", "54b87a495109c3c10c06bf56754d6cc3"),
-        "227T4W",
-        "https://www.fitbit.com/oauth2/authorize").setScopes(Arrays.asList("activity","settings")).setCredentialDataStore(
-            StoredCredential.getDefaultDataStore(
-                new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"))))
-        .build();
+
+  
+    AuthorizationCodeFlow.Builder acfb = new AuthorizationCodeFlow.Builder(
+                    BearerToken.authorizationHeaderAccessMethod(),
+                    new NetHttpTransport(),
+                    new JacksonFactory(),
+                    new GenericUrl("https://api.fitbit.com/oauth2/token"),
+                    new BasicAuthentication("227T4W", "54b87a495109c3c10c06bf56754d6cc3"),
+                    "227T4W",
+                    "https://www.fitbit.com/oauth2/authorize");
+    
+    acfb.setScopes(Arrays.asList("activity","settings"));
+    
+    FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
+    acfb.setCredentialDataStore(StoredCredential.getDefaultDataStore(ff));
+    return acfb.build();
+    
   }
 
 

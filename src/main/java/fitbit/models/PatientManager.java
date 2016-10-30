@@ -18,19 +18,38 @@ import java.util.ArrayList;
 public class PatientManager {
     
     
-    public void savePatient(String activeUserEmail,Patient patient, Connection conn) throws SQLException{
+    public Patient savePatient(String activeUserEmail,Patient patient, Connection conn) throws SQLException{
       
-          PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_patients( Clinician, userID, birthDate, name, surname,shortlisted)"+
-                                           " VALUES (?,?,?,?,?,1);");
-                                                                   
-          stmt.setString(1, activeUserEmail);   
-          stmt.setString(2, patient.getFitbitId()); 
-          stmt.setString(3, patient.getBirthDate());    
-          stmt.setString(4, patient.getName());  
-          stmt.setString(5, patient.getSurname()); 
-      
-          stmt.execute();
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_patients( Clinician, userID, birthDate, name, surname,shortlisted)"
+                + " VALUES (?,?,?,?,?,1)"
+                + " ON DUPLICATE KEY UPDATE Clinician = Clinician, userID= userID,birthDate=VALUES(birthDate),name=VALUES(name),surname=VALUES(surname), shortlisted=VALUES(shortlisted);");
 
+        stmt.setString(1, activeUserEmail);
+        stmt.setString(2, patient.getFitbitId());
+        stmt.setString(3, patient.getBirthDate());
+        stmt.setString(4, patient.getName());
+        stmt.setString(5, patient.getSurname());
+
+        int rowCount = stmt.executeUpdate();//1 for insert, 2 for update
+
+        
+        System.out.println("===============->" + rowCount);
+        //since added patient could have existed before (update), need to take his dates as well
+        if (rowCount==2){
+            PreparedStatement stmt2 = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate, fitbit_patients.userID"
+                    + " FROM fitbit_dates"
+                    + " RIGHT JOIN fitbit_patients ON (fitbit_dates.PCpair_id=fitbit_patients.PCpair_id)"
+                    + " WHERE fitbit_patients.Clinician=? AND fitbit_patients.userID=?"
+                    + " ORDER BY 3 ;", ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+            stmt2.setString(1, activeUserEmail);
+            stmt2.setString(2, patient.getFitbitId());
+
+            return createPatientList(stmt2).get(0);//returned just 1 currently added patient with full data
+        }
+        else{
+            return patient;
+        }
+        
     }
     
     
@@ -130,9 +149,30 @@ public class PatientManager {
      
     public void deletePatients(String activeUserEmail, Connection conn, String[] idsToDelete)throws SQLException{
 
+//            //CHECK IF PATIENTS ARE THERE (in case evil changes fitbitIds, and these would be deleted from credentialStore)
+//            String whereStr="WHERE Clinician =? AND (";
+//            for (String id : idsToDelete){
+//                whereStr+="userID=?||";
+//            }
+//            whereStr = whereStr.substring(0,whereStr.length()-2);
+//
+//            PreparedStatement stmt = conn.prepareStatement("SELECT userID FROM fitbit_patients "+whereStr+");");
+//
+//            stmt.setString(1,activeUserEmail);
+//            for (int i=0;i<idsToDelete.length;i++){
+//                stmt.setString(i+2, idsToDelete[i]);
+//            }
+//
+//            ResultSet rs = stmt.executeQuery();
+//            ArrayList<String> patientsThatCanBeDeleted = new ArrayList<>();
+//            while(rs.next()){
+//                patientsThatCanBeDeleted.add(rs.getString(1)); 
+//            }
+            
+            //DELETE PATIENTS
             String whereStr="WHERE Clinician =? AND (";
             for (String id : idsToDelete){
-                whereStr+="PCpair_id=?||";
+                whereStr+="userID=?||";
             }
             whereStr = whereStr.substring(0,whereStr.length()-2);
 
@@ -141,10 +181,11 @@ public class PatientManager {
             stmt.setString(1,activeUserEmail);
             for (int i=0;i<idsToDelete.length;i++){
                 stmt.setString(i+2, idsToDelete[i]);
-
             }
-
             stmt.execute();
+            
+            
+  
    
     }
     
@@ -167,7 +208,7 @@ public class PatientManager {
         if (addedPatients.size()>0){
                 String inString="";
                 for (Patient p:addedPatients){
-                    inString+=p.getFitbitId()+",";
+                    inString+="?,";
                 }
                 inString = inString.substring(0,inString.length()-1);
 
@@ -176,7 +217,9 @@ public class PatientManager {
                         " WHERE Clinician=? AND ((userID) IN ("+inString+"))");
 
                 stmt.setString(1,activeUserEmail);    
-
+                for (int i=0;i<addedPatients.size();i++){
+                    stmt.setString(i+2,addedPatients.get(i).getFitbitId());   
+                }
 
                 return stmt.executeUpdate();
         }
