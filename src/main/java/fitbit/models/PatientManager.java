@@ -33,7 +33,7 @@ public class PatientManager {
         int rowCount = stmt.executeUpdate();//1 for insert, 2 for update
 
         
-        System.out.println("===============->" + rowCount);
+        
         //since added patient could have existed before (update), need to take his dates as well
         if (rowCount==2){
             PreparedStatement stmt2 = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate, fitbit_patients.userID"
@@ -149,25 +149,6 @@ public class PatientManager {
      
     public void deletePatients(String activeUserEmail, Connection conn, String[] idsToDelete)throws SQLException{
 
-//            //CHECK IF PATIENTS ARE THERE (in case evil changes fitbitIds, and these would be deleted from credentialStore)
-//            String whereStr="WHERE Clinician =? AND (";
-//            for (String id : idsToDelete){
-//                whereStr+="userID=?||";
-//            }
-//            whereStr = whereStr.substring(0,whereStr.length()-2);
-//
-//            PreparedStatement stmt = conn.prepareStatement("SELECT userID FROM fitbit_patients "+whereStr+");");
-//
-//            stmt.setString(1,activeUserEmail);
-//            for (int i=0;i<idsToDelete.length;i++){
-//                stmt.setString(i+2, idsToDelete[i]);
-//            }
-//
-//            ResultSet rs = stmt.executeQuery();
-//            ArrayList<String> patientsThatCanBeDeleted = new ArrayList<>();
-//            while(rs.next()){
-//                patientsThatCanBeDeleted.add(rs.getString(1)); 
-//            }
             
             //DELETE PATIENTS
             String whereStr="WHERE Clinician =? AND (";
@@ -183,9 +164,6 @@ public class PatientManager {
                 stmt.setString(i+2, idsToDelete[i]);
             }
             stmt.execute();
-            
-            
-  
    
     }
     

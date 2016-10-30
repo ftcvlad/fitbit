@@ -893,7 +893,7 @@ function removeFromShortList(){
 }
 
 
-//DELETE USER
+//DELETE PATIENT
 
 function deleteSelectedUser(table, datatable){
         if (ajaxLocked){return;}
@@ -996,68 +996,81 @@ function updateTableListRemove(idsToRemove, datatable, table){
 function serverProcessForm(deferred) {//frm data is DOM form element
 
 
-    if (appsScriptLocked){return;}
+    if (ajaxLocked){return;}
 
 
     var errorSpanFit = $("#errorSpanFit");
-    var userID = $("#userIDselect").val();
+    var fitbitId = $("#userIDselect").val();
     
 
  
 
-    if ($("#datepicker").data("datepicker").arrayOfDates.length == 0) {
-
-        
+    if ($("#datepicker").data("datepicker").arrayOfDates.length === 0) {
          setStatus(errorSpanFit, "No dates selected", "ui-state-error", deferred);
-         
     }
-    else if (userID == null){
-        
+    else if (fitbitId === null){
          setStatus(errorSpanFit, "No Id was selected. If no dropdown, add users first", "ui-state-error", deferred);
-        
     }
     else {
 
-        var oToSend = {
-            selDates: $("#datepicker").data("datepicker").arrayOfDates.sort(),
-            intraday: $("#radioIntraFit").is(':checked') ? true : false,
-            userID: userID,
-            retrieveType: $('input[name=radioFitTop]:checked').val()
-
-        };
-
-
+        var actionType = $('input[name=radioFitTop]:checked').val();
+        var requestUrl, method;
+        if (actionType ==="fit"){
+            requestUrl = "RequestFitbit";
+            method="get";
+        }
+        else if (actionType ==="fitSave"){
+            
+        }
+        else if (actionType ==="DB"){
+            requestUrl = "getDates";
+        }
+        alert($("#datepicker").data("datepicker").arrayOfDates.sort());
         
         setStatus(errorSpanFit, "Retrieving...", "ui-state-highlight");
+        ajaxLocked = true;
+        jQuery.ajax({
+            method: method,
+            url: requestUrl,
+            data: {selDates:JSON.stringify($("#datepicker").data("datepicker").arrayOfDates.sort()),
+                   intraday:$("#radioIntraFit").is(':checked') ? true : false,
+                   fitbitId: fitbitId},
+            success: function (response, textStatus, jqXHR) {
+                //processServerResponse(response,deferred);
+            },
+            error: function (jqXHR, errorStatus, errorThrown) {
+                if (jqXHR.responseText === "Session expired") {
+                    window.location = "Login";
+                }
+                
+               setStatus($("#errorSpanFit"), jqXHR.responseText, "ui-state-error", deferred);
+               clearChartSliderAreaAndGetMemoryBack();
+                
+            },
+            complete: function () {
+                ajaxLocked = false;
+            }
+        });  
 
-        appsScriptLocked = true;
-        google.script.run
-            .withSuccessHandler(processServerResponse)
-            .withFailureHandler(processFormChoicesFailed)
-            .withUserObject(deferred)
-            .processFormChoices(oToSend)
 
     }
 
 
 }
 
-function processFormChoicesFailed(error, deferred){
 
-        var errorSpanFit = $("#errorSpanFit");
 
-        setStatus(errorSpanFit, error.message, "ui-state-error", deferred);
-        
-        if ( $('#slider_div').children().length > 0 ) {//if initialized
-            $("#slider_div").slider("destroy");
-        }
-        
-        $("#line_chart_div").html('');
-        $("#range").text('');
-        
-        appsScriptLocked = false;
-        
-}
+
+
+
+
+
+
+
+
+
+
+
 
 
 function processServerResponse(response, deferred){
@@ -1117,7 +1130,7 @@ function processServerResponse(response, deferred){
     var responseData;
     var selectedData;
 
-    if (response.intraday == true) {
+    if (response.intraday === true) {
     
         responseData = response.data;
         
@@ -1298,6 +1311,39 @@ function validateDate(yearStr, monthNum, dayStr){
 //===============================================SAME AGAIN :) ============================================================================
 //=========================================================================================================================================
 
+
+function clearChartSliderAreaAndGetMemoryBack(){
+    if (myDygraph!==null){//DYGRAPH
+        myDygraph.destroy();
+        myDygraph=null;
+        $("#slider_div").html('');
+    }
+    else {
+        
+        if (myHighchart!==null){//HIGHCHARTS
+            myHighchart.destroy();
+            myHighchart = null;
+        }
+        else if (myGoogleChart!==null){//GOOGLE CHART
+            myGoogleChart.clearChart();
+            myGoogleChart = null;
+        }
+        
+        if (  $("#slider_div").hasClass("ui-slider") ) {//if initialized
+            $("#slider_div").slider("destroy");
+            $("#range").text('');
+        }
+       
+    }
+}
+
+
+
+
+
+var myDygraph = null;
+var myGoogleChart = null;
+var myHighchart = null;
 
 function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedData) {
 

@@ -29,4 +29,85 @@ public class RequestManager {
         return requestFactory.buildGetRequest(url).execute();
     }
     
+    
+    public static void retrieveFromFitbit(String[] selDates,boolean intraday, String fitbitId ){
+        if (intraday== true){                          
+           for (int k=0;k<selDates.length;k++){
+                String dateString = selDates[k];
+    
+                 
+                  
+              
+               nextResult = UrlFetchApp.fetch("https://api.fitbit.com/1/user/"+userID+"/" + "activities/steps/date/" + dateString+ "/" + dateString + ".json", options);   
+              
+               o = JSON.parse(nextResult.getContentText());
+               
+               
+             //  Logger.log(JSON.stringify(o));
+            
+               
+               if (o["activities-steps"][0]["value"]!=="0"){
+               
+                 for (var i=0;i< o["activities-steps-intraday"]["dataset"].length;i++){
+                     
+                     if (o["activities-steps-intraday"]["dataset"][i]["value"]>0){//can be dates not synced for >7 days, steps>0, but no data
+                         allDaysData.push(o);
+                         break;
+                     }
+                 
+                 
+                 }
+                 
+                 
+               
+               }
+
+               
+                
+    
+           }
+           
+         
+         
+           
+      }
+      else if (intraday==false){                    //INTERDAY
+        
+//        var start = selDates[0];
+//        var end = selDates[selDates.length-1];
+//    
+//         
+//              nextResult = UrlFetchApp.fetch("https://api.fitbit.com/1/user/"+userID+"/" + "activities/steps/date/" + start+ "/" + end + ".json", options);     
+//              o = JSON.parse(nextResult.getContentText());
+//    
+//    
+//    //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},{"dateTime":"2016-06-11","value":"4497"}]}
+//    // {"activities-steps":[{"dateTime":"2016-06-01","value":"0"}],
+//    
+//    
+//    
+//              allDaysData.push(o);
+//              var nonzeroDay = false;//output 0 step days (for continuity), but should be at least 1 day with steps >0
+//              for (var i=0;i<o["activities-steps"].length;i++){
+//                  if (o["activities-steps"][i]["value"]!=="0"){
+//                     nonzeroDay = true;
+//                  
+//                  }
+//              
+//              }
+//    
+//              if (!nonzeroDay){
+//                  allDaysData=[];
+//              }
+//      
+
+    
+      }
+        
+        
+        
+    }
+    
+    
+    
 }

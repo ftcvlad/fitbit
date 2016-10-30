@@ -13,6 +13,7 @@ import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson.JacksonFactory;
+import com.google.api.client.util.store.DataStore;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.gson.Gson;
 import fitbit.models.PatientManager;
@@ -66,24 +67,15 @@ public class DeletePatients extends HttpServlet {
             conn= dataSource.getConnection();
             PatientManager pm =new PatientManager();
             pm.deletePatients(activeUserEmail,conn,idsToDel);//delete from DB
-            us.removePatientById(idsToDel);//remove from session
+            us.removePatientById(idsToDel);//delete from session
+            
             //delete from token store
-            
-            AuthorizationCodeFlow flow = initializeFlow();
-            
+            FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
+            DataStore ds = StoredCredential.getDefaultDataStore(ff);//datastore with DEFAULT_DATA_STORE_ID
             for (String fitId : idsToDel) {
-                flow.getCredentialDataStore().delete(activeUserEmail+fitId);
+                ds.delete(activeUserEmail+fitId);
             }
             
-            Credential credential = flow.loadCredential(activeUserEmail+"4PDGJ9");
-            if (credential != null && credential.getAccessToken() != null) {
-                System.out.println("user 1 found" );
-            }
-           
-            credential = flow.loadCredential(activeUserEmail+"3VD94D");
-            if (credential != null && credential.getAccessToken() != null) {
-                System.out.println("user 2 found" );
-            }
             
         }
         catch (SQLException sqle){
@@ -104,30 +96,6 @@ public class DeletePatients extends HttpServlet {
                 }
         }
     }
-
-
-    protected AuthorizationCodeFlow initializeFlow() throws IOException {
-
-
-        AuthorizationCodeFlow.Builder acfb = new AuthorizationCodeFlow.Builder(
-                        BearerToken.authorizationHeaderAccessMethod(),
-                        new NetHttpTransport(),
-                        new JacksonFactory(),
-                        new GenericUrl("https://api.fitbit.com/oauth2/token"),
-                        new BasicAuthentication("227T4W", "54b87a495109c3c10c06bf56754d6cc3"),
-                        "227T4W",
-                        "https://www.fitbit.com/oauth2/authorize");
-
-        acfb.setScopes(Arrays.asList("activity","settings"));
-
-        FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
-        acfb.setCredentialDataStore(StoredCredential.getDefaultDataStore(ff));
-        return acfb.build();
-    
-   }
-
-
-
 
 
 
