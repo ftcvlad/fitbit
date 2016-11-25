@@ -28,6 +28,8 @@ import java.util.Arrays;
 
 import FitbitJsonBeans.DayResponse;
 import FitbitJsonBeans.MinuteData;
+import FitbitJsonBeans.DaySummary;
+
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
@@ -116,11 +118,11 @@ public class FitbitRequestManager {
         
         try{ 
           
-            if (intraday== true){ 
+            ArrayList<DayResponse> allDaysData = new ArrayList<>();
+            Gson gson = new Gson();
+            if (intraday== true){   //INTRADAY
+
                 
-                
-                ArrayList<DayResponse> allDaysData = new ArrayList<>();
-                Gson gson = new Gson();
                 
                 for (String dateString : selDates) {
                   
@@ -132,15 +134,13 @@ public class FitbitRequestManager {
 
                     if (response.isSuccessStatusCode()) {
                  
-       
-                        DayResponse nextDayResult = gson.fromJson(response.parseAsString(), DayResponse.class);
+                        String responseAsString = response.parseAsString();
+                        DayResponse nextDayResult = gson.fromJson(responseAsString, DayResponse.class);
                         List<MinuteData> dayDataset = nextDayResult.getActivities_steps_intraday().getDataset();
                         
                        
                         if (nextDayResult.getActivities_steps().get(0).getValue()!=0){
-                           
                             for (int i=0;i<  dayDataset.size();i++){
-
                                 if (dayDataset.get(i).getValue()>0){//can be dates not synced for >7 days, steps>0, but no data. skip such
                                     allDaysData.add(nextDayResult);
                                     break;
@@ -152,50 +152,49 @@ public class FitbitRequestManager {
                     } else {
                         System.out.println("Issue with the server call: " + response.getStatusMessage());
                     }
-                    
-                    
-                   
-
-
-                    
                 }
 
 
 
 
-          }
-          else if (intraday==false){                    //INTERDAY
+            }
+            else if (intraday==false){                    //INTERDAY
         
-//        var start = selDates[0];
-//        var end = selDates[selDates.length-1];
-//    
-//         
-//              nextResult = UrlFetchApp.fetch("https://api.fitbit.com/1/user/"+userID+"/" + "activities/steps/date/" + start+ "/" + end + ".json", options);     
-//              o = JSON.parse(nextResult.getContentText());
-//    
-//    
-//    //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},{"dateTime":"2016-06-11","value":"4497"}]}
-//    // {"activities-steps":[{"dateTime":"2016-06-01","value":"0"}],
-//    
-//    
-//    
-//              allDaysData.push(o);
-//              var nonzeroDay = false;//output 0 step days (for continuity), but should be at least 1 day with steps >0
-//              for (var i=0;i<o["activities-steps"].length;i++){
-//                  if (o["activities-steps"][i]["value"]!=="0"){
-//                     nonzeroDay = true;
-//                  
-//                  }
-//              
-//              }
-//    
-//              if (!nonzeroDay){
-//                  allDaysData=[];
-//              }
-//      
-
+                String start = selDates[0];
+                String end = selDates[selDates.length-1];
     
-      }
+                GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + start+ "/" + end + ".json");
+                    
+                HttpRequest request = requestFactory.buildGetRequest(requestUrl);
+                HttpResponse response = request.execute();
+
+                if (response.isSuccessStatusCode()) {
+                    
+                    //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},...]}
+                    String responseAsString = response.parseAsString();
+                    DayResponse onlyInterdayResult = gson.fromJson(responseAsString, DayResponse.class);
+
+
+                    //output 0 step days (for continuity), but should be at least 1 day with steps >0
+                    
+                    for (DaySummary ds : onlyInterdayResult.getActivities_steps()) {
+                        if (ds.getValue()!=0){
+                            allDaysData.add(onlyInterdayResult);
+                            break;
+                        }
+                    }
+                    
+                    
+                    
+                }
+                else {
+                        System.out.println("Issue with the server call: " + response.getStatusMessage());
+                }
+                
+                
+ 
+
+            }//end of interday
             
            
 
