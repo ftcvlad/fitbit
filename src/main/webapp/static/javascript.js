@@ -1019,10 +1019,35 @@ function serverProcessForm(deferred) {//frm data is DOM form element
 
 
         var actionType = $('input[name=radioFitTop]:checked').val();
-        var requestUrl, method;
+        var intraday = $("#radioIntraFit").is(':checked') ? true : false;
+       
         if (actionType ==="fit"){
-            requestUrl = "RequestFitbit";
-            method="get";
+            
+            jQuery.ajax({
+                method: "get",
+                url: "RetrieveFromFitbit",
+                data: {selDates:JSON.stringify($("#datepicker").data("datepicker").arrayOfDates.sort()),
+                       intraday:intraday,
+                       fitbitId: fitbitId},
+                success: function (response, textStatus, jqXHR) {
+                       processFitbitData(intraday, response,deferred);
+                },
+                error: function (jqXHR, errorStatus, errorThrown) {
+                    if (jqXHR.responseText === "Session expired") {
+                        window.location = "Login";
+                    }
+
+                   setStatus($("#errorSpanFit"), jqXHR.responseText, "ui-state-error", deferred);
+                   clearChartSliderAreaAndGetMemoryBack();
+
+                },
+                complete: function () {
+                    ajaxLocked = false;
+                }
+            });  
+            
+  
+            
         }
         else if (actionType ==="fitSave"){
             
@@ -1033,28 +1058,7 @@ function serverProcessForm(deferred) {//frm data is DOM form element
         
         
        
-        jQuery.ajax({
-            method: method,
-            url: requestUrl,
-            data: {selDates:JSON.stringify($("#datepicker").data("datepicker").arrayOfDates.sort()),
-                   intraday:$("#radioIntraFit").is(':checked') ? true : false,
-                   fitbitId: fitbitId},
-            success: function (response, textStatus, jqXHR) {
-                //processServerResponse(response,deferred);
-            },
-            error: function (jqXHR, errorStatus, errorThrown) {
-                if (jqXHR.responseText === "Session expired") {
-                    window.location = "Login";
-                }
-                
-               setStatus($("#errorSpanFit"), jqXHR.responseText, "ui-state-error", deferred);
-               clearChartSliderAreaAndGetMemoryBack();
-                
-            },
-            complete: function () {
-                ajaxLocked = false;
-            }
-        });  
+        
 
 
     }
@@ -1069,78 +1073,26 @@ function serverProcessForm(deferred) {//frm data is DOM form element
 
 
 
-
-
-
-
-
-
-
-
-function processServerResponse(response, deferred){
-
-
+function processFitbitData(intraday, response, deferred){
+    
     var errorSpanFit = $("#errorSpanFit");
-
-
-   
-
-    if (response.changeFilling!==null){//add dates saved to DB
-        
-         var currFilling =  $('#userIDselect option[value="'+response.userID+'"]').data("foo");
     
-         
-        // from current filling delete dates that may have changed status (can be noSync or part) 
-         var allChangedDates = response.changeFilling["part"].concat(response.changeFilling["full"]).concat(response.changeFilling["noSync"]).concat(response.changeFilling["noData"]);
-         for (var i=0;i<currFilling["noSync"].length;i++){
-             if (allChangedDates.indexOf(currFilling["noSync"][i])!==-1){
-                 currFilling["noSync"].splice(i,1);
-                 i--;
-             }
-         }
-         for (var i=0;i<currFilling["part"].length;i++){
-             if (allChangedDates.indexOf(currFilling["part"][i])!==-1){
-                 currFilling["part"].splice(i,1);
-                 i--;
-             }
-         } 
-         
-         //append new dates
-         for (i in response.changeFilling){
-             if (!response.changeFilling.hasOwnProperty(i)){continue};
-         
-             currFilling[i] = currFilling[i].concat(response.changeFilling[i]);
-           
-         }
-         
+  
+    var allDayData = response;
+    
 
+    if (allDayData.length===0){
+        setStatus(errorSpanFit, "No data on selected dates", "ui-state-highlight", deferred);
+        clearChartSliderAreaAndGetMemoryBack();
+        return;
     }
-
-
-    if (response.data.length===0){
-         setStatus(errorSpanFit, "0 step dates were added. Nothing to draw", "ui-state-highlight", deferred);
-         if ( $('#slider_div').children().length > 0 ) {//if initialized
-            $("#slider_div").slider("destroy");
-         }
-         $("#line_chart_div").html('');
-         $("#range").text('');
-         return;
-    }
-
-    setStatus(errorSpanFit, "Processing data...", "ui-state-highlight");
-
-   
-
-    var responseData;
+    
+    
     var selectedData;
-
-    if (response.intraday === true) {
     
-        responseData = response.data;
-        
+    if (intraday) {
+    
 
-       
-        
         selectedData = [['Time']];
         var frqMinutes = parseInt($("#frq").val());
 
@@ -1163,7 +1115,7 @@ function processServerResponse(response, deferred){
             }
 
             var str = hh + ":" + mm;
-            str = str == "00:00" ? "24:00" : str;
+            str = str === "00:00" ? "24:00" : str;
 
 
             selectedData.push([str]);
@@ -1173,21 +1125,18 @@ function processServerResponse(response, deferred){
 
         var totalStepsForPeriod = 0;
       
-        for (var i=0;i<responseData.length;i++){
+        for (var i=0;i<allDayData.length;i++){
         
-            selectedData[0].push(responseData[i]["activities-steps"][0]["dateTime"]);
+            selectedData[0].push(allDayData[i]["activities-steps"][0]["dateTime"]);
 
-            var dataAvailableLength = responseData[i]["activities-steps-intraday"]["dataset"].length;//for current day can be <1440
+            var dataAvailableLength = allDayData[i]["activities-steps-intraday"]["dataset"].length;//for current day can be <1440
             var itemsPushed = 0;
 
             for (j = 1; j < dataAvailableLength; j++) {//ASSUME THERE IS always DATA IN THE BEGINNING OF THE DAY, BUT NOT IN END
 
+                totalStepsForPeriod += allDayData[i]["activities-steps-intraday"]["dataset"][j]["value"];
 
-
-                totalStepsForPeriod += responseData[i]["activities-steps-intraday"]["dataset"][j]["value"];
-
-
-                if (j  % frqMinutes == 0 || j == (dataAvailableLength - 1)) {//add data every f hours or leftovers
+                if (j  % frqMinutes === 0 || j === (dataAvailableLength - 1)) {//add data every f hours or leftovers
 
                     // console.log(itemsPushed+1+ "j: "+j);
                     selectedData[itemsPushed + 1].push(totalStepsForPeriod);
@@ -1204,42 +1153,217 @@ function processServerResponse(response, deferred){
             }
 
         }
-
+        
+        
+        
+        
+        
 
     }//end of intraday if
-    
-    else if (response.intraday == false) {
+    else {          //INTERDAY
      
-    
-    
-        responseData = response.data[0]["activities-steps"];
+ 
         selectedData = [['Date', 'Steps summary']];
 
 
-        for (var j = 0; j < responseData.length; j++) {
-            selectedData.push([responseData[j]["dateTime"], parseInt(responseData[j]["value"])]);
+        for (var j = 0; j < allDayData[0]["activities-steps"].length; j++) {
+            selectedData.push([allDayData[0]["activities-steps"][j]["dateTime"], 
+                                        parseInt(allDayData[0]["activities-steps"][j]["value"])]);
         }
-
-    }//end of interday else
-
-
-
-
-
-
+        
+      
+    }
+    
+    
+    
     if (deferred===undefined){
-          setStatus(errorSpanFit, "Drawing data...", "ui-state-highlight");
-
-          drawGraph($("#graphType").val(), "Fitbit", 'line_chart_div', "slider_div", "range", selectedData);
-          setStatus(errorSpanFit, "Done", "ui-state-highlight");
+        setStatus(errorSpanFit, "Drawing data...", "ui-state-highlight");
+        drawGraph($("#graphType").val(), "Fitbit", 'line_chart_div', "slider_div", "range", selectedData, frqMinutes);
+        setStatus(errorSpanFit, "Done", "ui-state-highlight");
     }
     else{//if combined tab, return selectedData to callback
-    
        deferred.resolve(selectedData);
     }
     
     
-     appsScriptLocked = false;
+    
+    
+    
+    
+
+    
+    
+    
+}
+
+
+
+
+
+
+
+function processServerResponse(response, deferred){
+
+
+//    var errorSpanFit = $("#errorSpanFit");
+
+
+   
+
+//    if (response.changeFilling!==null){//add dates saved to DB
+//        
+//         var currFilling =  $('#userIDselect option[value="'+response.userID+'"]').data("foo");
+//    
+//         
+//        // from current filling delete dates that may have changed status (can be noSync or part) 
+//         var allChangedDates = response.changeFilling["part"].concat(response.changeFilling["full"]).concat(response.changeFilling["noSync"]).concat(response.changeFilling["noData"]);
+//         for (var i=0;i<currFilling["noSync"].length;i++){
+//             if (allChangedDates.indexOf(currFilling["noSync"][i])!==-1){
+//                 currFilling["noSync"].splice(i,1);
+//                 i--;
+//             }
+//         }
+//         for (var i=0;i<currFilling["part"].length;i++){
+//             if (allChangedDates.indexOf(currFilling["part"][i])!==-1){
+//                 currFilling["part"].splice(i,1);
+//                 i--;
+//             }
+//         } 
+//         
+//         //append new dates
+//         for (i in response.changeFilling){
+//             if (!response.changeFilling.hasOwnProperty(i)){continue};
+//         
+//             currFilling[i] = currFilling[i].concat(response.changeFilling[i]);
+//           
+//         }
+//         
+//
+//    }
+
+
+//    if (response.data.length===0){
+//         setStatus(errorSpanFit, "0 step dates were added. Nothing to draw", "ui-state-highlight", deferred);
+//         if ( $('#slider_div').children().length > 0 ) {//if initialized
+//            $("#slider_div").slider("destroy");
+//         }
+//         $("#line_chart_div").html('');
+//         $("#range").text('');
+//         return;
+//    }
+
+//    setStatus(errorSpanFit, "Processing data...", "ui-state-highlight");
+
+   
+
+//    var responseData;
+//    var selectedData;
+//
+//    if (response.intraday === true) {
+//    
+//        responseData = response.data;
+//        
+//
+//       
+//        
+//        selectedData = [['Time']];
+//        var frqMinutes = parseInt($("#frq").val());
+//
+//        //ADD TIME COLUMN
+//
+//
+//        var zeroDate = new Date(0, 0, 0, 0, 0, 0, 0);
+//        var hh;
+//        var mm;
+//        for (var n = 0; n < 24 * 60 / frqMinutes; n++) {
+//
+//            zeroDate.setMinutes(zeroDate.getMinutes() + frqMinutes);
+//            hh = zeroDate.getHours() + "";
+//            if (hh.length < 2) {
+//                hh = "0" + hh;
+//            }
+//            mm = zeroDate.getMinutes() + "";
+//            if (mm.length < 2) {
+//                mm = "0" + mm;
+//            }
+//
+//            var str = hh + ":" + mm;
+//            str = str == "00:00" ? "24:00" : str;
+//
+//
+//            selectedData.push([str]);
+//        }
+//
+//        //GENERATE SELECTED DATA
+//
+//        var totalStepsForPeriod = 0;
+//      
+//        for (var i=0;i<responseData.length;i++){
+//        
+//            selectedData[0].push(responseData[i]["activities-steps"][0]["dateTime"]);
+//
+//            var dataAvailableLength = responseData[i]["activities-steps-intraday"]["dataset"].length;//for current day can be <1440
+//            var itemsPushed = 0;
+//
+//            for (j = 1; j < dataAvailableLength; j++) {//ASSUME THERE IS always DATA IN THE BEGINNING OF THE DAY, BUT NOT IN END
+//
+//
+//
+//                totalStepsForPeriod += responseData[i]["activities-steps-intraday"]["dataset"][j]["value"];
+//
+//
+//                if (j  % frqMinutes == 0 || j == (dataAvailableLength - 1)) {//add data every f hours or leftovers
+//
+//                    // console.log(itemsPushed+1+ "j: "+j);
+//                    selectedData[itemsPushed + 1].push(totalStepsForPeriod);
+//                    //   console.log(selectedData[itemsPushed+1]);
+//                    totalStepsForPeriod = 0;
+//                    itemsPushed++;
+//                }
+//
+//            }
+//
+//
+//            for (var k = itemsPushed + 1; k < selectedData.length; k++) {//if day not ended AND no data from 23:59--00:00, because fitbit sends it with next day's data
+//                selectedData[k].push(null);
+//            }
+//
+//        }
+//
+//
+//    }//end of intraday if
+    
+//    else if (response.intraday == false) {
+//     
+//    
+//    
+//        responseData = response.data[0]["activities-steps"];
+//        selectedData = [['Date', 'Steps summary']];
+//
+//
+//        for (var j = 0; j < responseData.length; j++) {
+//            selectedData.push([responseData[j]["dateTime"], parseInt(responseData[j]["value"])]);
+//        }
+//
+//    }//end of interday else
+
+
+
+
+
+//    if (deferred===undefined){
+//          setStatus(errorSpanFit, "Drawing data...", "ui-state-highlight");
+//
+//          drawGraph($("#graphType").val(), "Fitbit", 'line_chart_div', "slider_div", "range", selectedData);
+//          setStatus(errorSpanFit, "Done", "ui-state-highlight");
+//    }
+//    else{//if combined tab, return selectedData to callback
+//    
+//       deferred.resolve(selectedData);
+//    }
+//    
+//    
+//     appsScriptLocked = false;
 }   
 
 
@@ -1248,10 +1372,7 @@ function processServerResponse(response, deferred){
 //=========================================================================================================================================
 
 function validateDate(yearStr, monthNum, dayStr){
-   
-   
-   
-   
+ 
            if (dayStr!=="" || yearStr!==""){
                var day = parseInt(dayStr);
                var year = parseInt(yearStr);
@@ -1268,7 +1389,7 @@ function validateDate(yearStr, monthNum, dayStr){
                switch (monthNum) {
                  case 2 :
              
-                     maxDays = ((year % 4 == 0 && year % 100!==0) ||year % 400 == 0) ? 29 : 28; 
+                     maxDays = ((year % 4 === 0 && year % 100!==0) ||year % 400 === 0) ? 29 : 28; 
                      break;
                  case 9 : case 4 : case 6 : case 11 :
                      maxDays = 30;
@@ -1300,83 +1421,65 @@ function validateDate(yearStr, monthNum, dayStr){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-//=========================================================================================================================================
-//===============================================SAME AGAIN :) ============================================================================
-//=========================================================================================================================================
-
-
 function clearChartSliderAreaAndGetMemoryBack(){
-    if (myDygraph!==null){//DYGRAPH
-        myDygraph.destroy();
-        myDygraph=null;
-        $("#slider_div").html('');
+  
+        
+    if (myHighchart!==null){//HIGHCHARTS
+        myHighchart.destroy();
+        myHighchart = null;
     }
-    else {
-        
-        if (myHighchart!==null){//HIGHCHARTS
-            myHighchart.destroy();
-            myHighchart = null;
-        }
-        else if (myGoogleChart!==null){//GOOGLE CHART
-            myGoogleChart.clearChart();
-            myGoogleChart = null;
-        }
-        
-        if (  $("#slider_div").hasClass("ui-slider") ) {//if initialized
-            $("#slider_div").slider("destroy");
-            $("#range").text('');
-        }
+    else if (myGoogleChart!==null){//GOOGLE CHART
+        myGoogleChart.clearChart();
+        myGoogleChart = null;
+    }
+
+    if (  $("#slider_div").hasClass("ui-slider") ) {//if initialized
+        $("#slider_div").slider("destroy");
+        $("#range").text('');
+    }
        
-    }
+    
 }
 
 
 
 
+//=========================================================================================================================================
+//===============================================DRAW GRAPHS :) ============================================================================
+//=========================================================================================================================================
 
-var myDygraph = null;
+
 var myGoogleChart = null;
 var myHighchart = null;
+function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedData, frqMinutes) {
 
-function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedData) {
-
-
-   
+    clearChartSliderAreaAndGetMemoryBack();
 
     //DRAW GRAPHS
-
     var chartDiv = document.getElementById(chartId);
-    var chart;
+  
     if (chartType === "LC" || chartType === "LS") {
+    
+       
+                
         var dataT = google.visualization.arrayToDataTable(selectedData);
         var options = {
             title: chartTitle,//***
             curveType: 'none',
             legend: {position: 'bottom'},
             //explorer: { keepInBounds: true},
-            chartArea: {/*height: 400, width: 'auto',*/left: 70, top: 50, width: '90%', height: '75%'},
+            chartArea: {/*height: 400, width: 'auto',*/left: 70, top: 50,  width: '90%', height: '75%'},
             //hAxis: {gridlines: {count: 4}},
             hAxis: {slantedText: true, slantedTextAngle: 90, viewWindow: {}},
             width: 'auto',
             height: 600,
             // lineWidth: 1,
-            vAxis: {maxValue: 200, gridlines: {count: 10}, title: chartId==="Steps"},
-
+            vAxis: {maxValue: 200, gridlines: {count: 10}, title:"Sum of vector magnitudes"},
             // interpolateNulls: true,
             isStacked: false
         };
-        
+
+
         if (chartTitle==="Comparison"){//skilled programming style from Vlad!!!
         
             //put Gene on secondary axis
@@ -1407,100 +1510,126 @@ function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedDa
         }
 
 
-        if (chartType == "LC") {
-            chart = new google.visualization.LineChart(chartDiv);//***
+        if (chartType === "LC") {
+            myGoogleChart = new google.visualization.LineChart(chartDiv);//***
 
         }
-        else if (chartType == "LS") {
+        else if (chartType === "LS") {
             options.isStacked = true;
-            chart = new google.visualization.AreaChart(chartDiv);
+            myGoogleChart = new google.visualization.AreaChart(chartDiv);
         }
-        chart.draw(dataT, options);
-
+        myGoogleChart.draw(dataT, options);
+         
     }
-    else if (chartType == "anychart" || chartType == "AP") {
-        var dataSet = anychart.data.set(selectedData);
-
-
-        // create radar chart
-        chart = anychart.radar();
-
-        $(chartDiv).html('');//***
-        // set container id for the chart
-        chart.container(chartId);//***
-
-        // set chart title text settings
-        chart.title(chartTitle);//***
-
-
-        if (chartType == "AP") {
-            chart.yScale().stackMode('value');
-        }
-
-        // set chart yScale settings
-        chart.yScale();
-        // .minimum(0)
-        //  .maximumGap(0)//offset between maximum and minimum scale values and data
-        //  .ticks().interval(300);//50 -- frequency of vertical ticks
-
-        // set xAxis labels settings
-        chart.xAxis().labels().padding(5);
-
-//             chart.xAxis().ticks(false);
-//             chart.xAxis().labels().enabled(false);
-//            chart.grid(0, false);//removes radial lines
-
-        //chart.xAxis().labels().rotation(90);
-
-        // set chart legend settings
-        chart.legend()
-            .align('center')
-            .enabled(true);
-
-        // set chart grinds settings
-        chart.grid(0).oddFill('white').evenFill('white').stroke('rgb(221,221,221)');//color of radial lines+fill between
-
-
-        // create point data labels formation function
-        var labelFormattingFunction = function () {
-            return this.x + ': ' + this.value.toFixed(2);
-        };
-
-
-        for (var j = 1; j < selectedData[0].length; j++) {
-
-            var data1 = dataSet.mapAs({x: [0], value: [j]});//data1 is dataView
-
-
-            // create first series with mapped data
-            var series1;
-            if (chartType == "AP") {
-                series1 = chart.area(data1).name(selectedData[0][j]);//series1 is anychart.core.radar.series.Line
+    
+    else if (chartType==="HL" || chartType==="HS" || chartType==="HP"){
+    
+            var myCategories = [];
+            for (var i=1;i<selectedData.length;i++){
+                myCategories.push(selectedData[i][0]);
             }
-            else if (chartType == "anychart") {
-                series1 = chart.line(data1).name(selectedData[0][j]);//series1 is anychart.core.radar.series.Line
-
+            
+            var allSeries = [];
+            for (var k=1;k<selectedData[0].length;k++){
+               
+               var nextData = [];
+               for (i=1;i<selectedData.length;i++){
+                   nextData.push(selectedData[i][k]);
+               }
+              
+               var nextSeries = {
+                    name: selectedData[0][k],
+                    data: nextData,
+                    pointPlacement: 'on',
+                    cropThreshold:1
+                };
+                allSeries.push(nextSeries);
+            
             }
+           // selectedData.shift();//get rid of header, so that when it's used in slider, it has the same length as series
+           
+    
+            Highcharts.seriesTypes.line.prototype.cropShoulder = 0;
+            myHighchart = new Highcharts.Chart({
 
-            series1.markers().size(3);
-            // series1.markers(true);
-            series1.tooltip().textFormatter(labelFormattingFunction);//tooltip-- frame with stepCount.
-
-
-        }
-
-
-        chart.width("600px");
-        chart.height("600px");
-
-        chart.draw();
-
-
+                chart: {
+                    renderTo: chartId,
+                    polar: true,
+                    type: (chartType==="HL")? 'line':'area'
+                },
+        
+                title: {
+                    text: 'Geneactiv: Sum of vector magnitudes',
+                    x: -80
+                },
+        
+                pane: {
+                    size: '80%'
+                },
+        
+                xAxis: {
+                    categories: myCategories,
+                    tickmarkPlacement: 'on',
+                    lineWidth: 0,
+                    tickInterval:Math.round(50/frqMinutes),
+                    minRange:1,
+                    type:'linear',
+                    endOnTick:false,
+                    startOnTick:false,
+                    min:0,
+                    max:selectedData.length-1//-2 is not a solution for  all my problems :(
+                            
+                },
+        
+                yAxis: {
+                    gridLineInterpolation: 'polygon',
+                    lineWidth: 0,
+                    min: 0
+                },
+        
+                tooltip: {
+                    shared: true,
+                    pointFormat: '<span style="color:{series.color}">{series.name}: <b>{point.y:,.0f}</b><br/>'
+                },
+        
+                legend: {
+                    align: 'right',
+                    verticalAlign: 'top',
+                    y: 70,
+                    layout: 'vertical'
+                },
+               plotOptions: {
+                    line: {
+                        marker: {
+                            enabled: false
+                        },
+                        lineWidth: 1,
+                        cropThreshold:1,
+                        connectEnds:false
+                      
+                    },
+                    area:{
+                        marker: {
+                            enabled: false
+                        },
+                        lineWidth: 1,
+                        connectEnds:false,
+                        stacking: (chartType==="HP")? 'percent':'normal'//percent,
+                        
+                    }
+               }, 
+        
+               series: allSeries
+        
+            });
     }
+ 
 
     var sliderDiv = $("#" + sliderId);
     var rangeDiv = $("#" + rangeId);  
     //row indexes in datatable are 0 based
+
+
     sliderDiv.slider({//***
         range: true,
         min: 1,
@@ -1508,53 +1637,35 @@ function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedDa
         values: [1, selectedData.length - 1],
         stop: function (event, ui) {
 
-            if (chartType == "LC" || chartType == "LS") {
+            if (chartType === "LC" || chartType === "LS") {
                 options.hAxis.viewWindow.min = ui.values[0] - 1;
                 options.hAxis.viewWindow.max = ui.values[1];//range is [min,max)
 
-                chart.draw(dataT, options);
+                myGoogleChart.draw(dataT, options);
             }
-            else if (chartType == "anychart" || chartType == "AP") {
+            else if(chartType==="HL" || chartType==="HS" ||  chartType==="HP"){
 
-                chart.removeAllSeries();
-                for (j = 1; j < selectedData[0].length; j++) {
-
-                    data1 = dataSet.mapAs({x: [0], value: [j]});//data1 is dataView
-
-                    var filteredView = data1.filter("x", function (value) {
-
-                        var rangeStartTime = selectedData[ui.values[0]][0];
-                        var rangeEndTime = selectedData[ui.values[1]][0];
-
-                        return (value >= rangeStartTime && value <= rangeEndTime);
-                    });
-
-
-                    if (chartType == "anychart") {
-                        series1 = chart.line(filteredView).name(selectedData[0][j]);
-                    }
-                    else if (chartType == "AP") {
-                        series1 = chart.area(filteredView).name(selectedData[0][j]);
-                    }
-
-
-                }
-
-                chart.draw();
-
+                  myHighchart=$(chartDiv).highcharts();//lol var here --> -2 hours
+                  myHighchart.xAxis[0].options.tickInterval = Math.ceil((50/frqMinutes)/((selectedData.length - 1 - 1)/(ui.values[1]-1 - ui.values[0]-1)));
+                  //  alert(chart.options.xAxis[0].tickInterval);
+                  myHighchart.xAxis[0].setExtremes(ui.values[0] - 1, ui.values[1]-1);  
+                  myHighchart.redraw();
             }
-
         },
         slide: function (event, ui) {
-          
+
             rangeDiv.text(selectedData[ui.values[0]][0] + " - " + selectedData[ui.values[1]][0]);//***
         }
 
     });
-  
+
     rangeDiv.text(selectedData[sliderDiv.slider("values", 0)][0] + " - " + selectedData[sliderDiv.slider("values", 1)][0]);//***
 
 }
+
+
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

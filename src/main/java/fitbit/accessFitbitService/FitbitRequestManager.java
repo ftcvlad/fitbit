@@ -31,6 +31,7 @@ import FitbitJsonBeans.MinuteData;
 import FitbitJsonBeans.DaySummary;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -106,7 +107,7 @@ public class FitbitRequestManager {
     
     
     //http://www.programcreek.com/java-api-examples/index.php?api=com.google.api.client.auth.oauth2.StoredCredential -- good one!!!
-    public static void retrieveFromFitbit(String[] selDates,boolean intraday, String fitbitId, String activeUserEmail ) throws Exception{
+    public static ArrayList<DayResponse> retrieveFromFitbitIntraday(String[] selDates, String fitbitId, String activeUserEmail ) throws Exception{
         
         
         final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
@@ -115,103 +116,105 @@ public class FitbitRequestManager {
             throw new Exception("Could not create request factory!");
         }
     
+        ArrayList<DayResponse> allDaysData = new ArrayList<>();
+        Gson gson = new Gson();
         
         try{ 
           
-            ArrayList<DayResponse> allDaysData = new ArrayList<>();
-            Gson gson = new Gson();
-            if (intraday== true){   //INTRADAY
-
-                
-                
-                for (String dateString : selDates) {
-                  
-                    
-                    GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + dateString+ "/" + dateString + ".json");
-                    
-                    HttpRequest request = requestFactory.buildGetRequest(requestUrl);
-                    HttpResponse response = request.execute();
-
-                    if (response.isSuccessStatusCode()) {
-                 
-                        String responseAsString = response.parseAsString();
-                        DayResponse nextDayResult = gson.fromJson(responseAsString, DayResponse.class);
-                        List<MinuteData> dayDataset = nextDayResult.getActivities_steps_intraday().getDataset();
-                        
-                       
-                        if (nextDayResult.getActivities_steps().get(0).getValue()!=0){
-                            for (int i=0;i<  dayDataset.size();i++){
-                                if (dayDataset.get(i).getValue()>0){//can be dates not synced for >7 days, steps>0, but no data. skip such
-                                    allDaysData.add(nextDayResult);
-                                    break;
-                                }
-                            }
-                        }
- 
-                        
-                    } else {
-                        System.out.println("Issue with the server call: " + response.getStatusMessage());
-                    }
-                }
+            for (String dateString : selDates) {
 
 
+                GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + dateString+ "/" + dateString + ".json");
 
-
-            }
-            else if (intraday==false){                    //INTERDAY
-        
-                String start = selDates[0];
-                String end = selDates[selDates.length-1];
-    
-                GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + start+ "/" + end + ".json");
-                    
                 HttpRequest request = requestFactory.buildGetRequest(requestUrl);
                 HttpResponse response = request.execute();
 
                 if (response.isSuccessStatusCode()) {
-                    
-                    //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},...]}
+
                     String responseAsString = response.parseAsString();
-                    DayResponse onlyInterdayResult = gson.fromJson(responseAsString, DayResponse.class);
+                    DayResponse nextDayResult = gson.fromJson(responseAsString, DayResponse.class);
+                    List<MinuteData> dayDataset = nextDayResult.getActivities_steps_intraday().getDataset();
 
 
-                    //output 0 step days (for continuity), but should be at least 1 day with steps >0
-                    
-                    for (DaySummary ds : onlyInterdayResult.getActivities_steps()) {
-                        if (ds.getValue()!=0){
-                            allDaysData.add(onlyInterdayResult);
-                            break;
+                    if (nextDayResult.getActivities_steps().get(0).getValue()!=0){
+                        for (int i=0;i<  dayDataset.size();i++){
+                            if (dayDataset.get(i).getValue()>0){//can be dates not synced for >7 days, steps>0, but no data. skip such
+                                allDaysData.add(nextDayResult);
+                                break;
+                            }
                         }
                     }
-                    
-                    
-                    
-                }
-                else {
-                        System.out.println("Issue with the server call: " + response.getStatusMessage());
-                }
-                
-                
- 
 
-            }//end of interday
+
+                } else {
+                    System.out.println("Issue with the server call: " + response.getStatusMessage());
+                }
+            } 
             
+        }
+        catch(JsonSyntaxException jse){
+            System.out.println("Poles changed places -- fitbit changed API. Json syntax exception");
+        }
+        catch (Exception e) {
+            System.out.println(e.getMessage());
+            //HTTPResponseException, IOException,...
            
+        }
+        
+        return allDaysData;
+          
+    }
+    
+    
+    public static ArrayList<DayResponse> retrieveFromFitbitInterday(String[] selDates, String fitbitId, String activeUserEmail ) throws Exception{
+        
+        final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
+        
+        if (requestFactory==null){
+            throw new Exception("Could not create request factory!");
+        }
+    
+        ArrayList<DayResponse> allDaysData = new ArrayList<>();
+        Gson gson = new Gson();
+        
+        try{
+    
+            String start = selDates[0];
+            String end = selDates[selDates.length-1];
 
-            
-            
+            GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + start+ "/" + end + ".json");
+
+            HttpRequest request = requestFactory.buildGetRequest(requestUrl);
+            HttpResponse response = request.execute();
+
+            if (response.isSuccessStatusCode()) {
+
+                //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},...]}
+                String responseAsString = response.parseAsString();
+                DayResponse onlyInterdayResult = gson.fromJson(responseAsString, DayResponse.class);
+
+
+                //output 0 step days (for continuity), but should be at least 1 day with steps >0
+
+                for (DaySummary ds : onlyInterdayResult.getActivities_steps()) {
+                    if (ds.getValue()!=0){
+                        allDaysData.add(onlyInterdayResult);
+                        break;
+                    }
+                }
+            }
+            else {
+                    System.out.println("Issue with the server call: " + response.getStatusMessage());
+            }
+        
         }
         catch (Exception e) {
             System.out.println(e.getMessage());
         }
-
         
-       
-      
-        
-        
-        
+        return allDaysData;
     }
+    
     
     
     

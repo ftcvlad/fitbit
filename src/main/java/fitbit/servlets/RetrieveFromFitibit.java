@@ -5,42 +5,31 @@
  */
 package fitbit.servlets;
 
+import FitbitJsonBeans.DayResponse;
 import com.google.gson.Gson;
 import fitbit.accessFitbitService.FitbitRequestManager;
 import fitbit.models.User;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
+
 
 /**
  *
  * @author Vlad
  */
-@WebServlet(name = "RequestFitbit", urlPatterns = {"/RequestFitbit"})
-public class RequestFitbit extends HttpServlet {
+@WebServlet(name = "RetrieveFromFitbit", urlPatterns = {"/RetrieveFromFitbit"})
+public class RetrieveFromFitibit extends HttpServlet {
 
    
-    private DataSource dataSource;
-    
-    @Override
-    public void init() throws ServletException {
-		try {
-                        dataSource = (DataSource) new InitialContext().lookup("java:comp/env/" + "jdbc/db");
-			
-		} catch (NamingException e) {
-		}
-    }
-    
-
+ 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -65,8 +54,27 @@ public class RequestFitbit extends HttpServlet {
         User us = (User) session.getAttribute("user");
         String activeUserEmail = us.getUsername();
         
+        
         try{
-            FitbitRequestManager.retrieveFromFitbit(selDates,intraday,fitbitId, activeUserEmail);
+            
+            ArrayList<DayResponse> allDaysData;
+            
+            if (intraday==true){
+                allDaysData = FitbitRequestManager.retrieveFromFitbitIntraday(selDates,fitbitId, activeUserEmail);
+            }
+            else{
+                allDaysData = FitbitRequestManager.retrieveFromFitbitInterday(selDates,fitbitId, activeUserEmail);
+            }
+            
+            String jsonResponse = new Gson().toJson(allDaysData);
+            
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().print(jsonResponse);
+            
+            
+            
+            
         }
         catch(Exception e){
             
