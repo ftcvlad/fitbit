@@ -6,7 +6,8 @@
 package fitbit.servlets;
 
 import com.google.gson.Gson;
-import fitbit.accessFitbitService.RequestManager;
+import fitbit.accessFitbitService.FitbitRequestManager;
+import fitbit.models.User;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -17,6 +18,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.sql.DataSource;
 
 /**
@@ -59,7 +61,20 @@ public class RequestFitbit extends HttpServlet {
             return;
         }
        
-        RequestManager.retrieveFromFitbit(selDates,intraday,fitbitId);
+        HttpSession session = request.getSession(false);
+        User us = (User) session.getAttribute("user");
+        String activeUserEmail = us.getUsername();
+        
+        try{
+            FitbitRequestManager.retrieveFromFitbit(selDates,intraday,fitbitId, activeUserEmail);
+        }
+        catch(Exception e){
+            
+
+            response.setContentType("text/plain");
+            response.setStatus(400);
+            response.getWriter().write(e.getMessage());
+        }
  
      
   

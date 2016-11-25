@@ -28,8 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.naming.InitialContext;
@@ -77,10 +77,14 @@ public class ServletCallbackSample extends HttpServlet  {
 
   @Override
   protected final void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    
+      
+    //GET AUTHORIZATION CODE  
     StringBuffer buf = req.getRequestURL();
-    if (req.getQueryString() != null) {
+    if (req.getQueryString() != null) {//e.g. qs===?code=6edd6bf75da4460530cbf9cd3f9ff61e1645e67c
       buf.append('?').append(req.getQueryString());
     }
+    
     AuthorizationCodeResponseUrl responseUrl = new AuthorizationCodeResponseUrl(buf.toString());
     String code = responseUrl.getCode();
     if (responseUrl.getError() != null) {
@@ -96,26 +100,16 @@ public class ServletCallbackSample extends HttpServlet  {
           flow = initializeFlow();
         }
         
-        
+        //EXCHANGE CODE FOR TOKEN
         HttpResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).executeUnparsed();
-        TokenResponse tokenResponse = new TokenResponse();
+       
         FitbitTokenResponse ftr =null;
+        String patientFitbitId = null;
         try {
           
-
             ftr = response.parseAs(FitbitTokenResponse.class);
-           
             
-            
-            tokenResponse.setAccessToken(ftr.getAccess_token());
-            tokenResponse.setScope(ftr.getScope());
-            tokenResponse.setExpiresInSeconds(ftr.getExpires_in());
-            tokenResponse.setRefreshToken(ftr.getRefresh_token());
-            tokenResponse.setTokenType(ftr.getToken_type());
-            
-            
-            
-            
+            patientFitbitId = ftr.getUser_id();//id of the just authorized user
         } 
         catch(IOException ioe){
             System.out.println("IO exception occured while parsing Fitbit token response!");
@@ -124,8 +118,6 @@ public class ServletCallbackSample extends HttpServlet  {
         finally {
             response.disconnect();
         }
-        
-        String patientFitbitId = ftr.getUser_id();//id of the just authorized user
         
         HttpSession session = req.getSession(false);
         Patient npi = (Patient) session.getAttribute("newPatientInfo");
@@ -148,7 +140,7 @@ public class ServletCallbackSample extends HttpServlet  {
             
             
             //SAVE TOKEN TO TOKEN STORE (FILE ON SERVER)
-            Credential credential = flow.createAndStoreCredential(tokenResponse, clinicianUsername+patientFitbitId);
+            Credential credential = flow.createAndStoreCredential(ftr, clinicianUsername+patientFitbitId);
             onSuccess(req, resp, credential);
             
          }

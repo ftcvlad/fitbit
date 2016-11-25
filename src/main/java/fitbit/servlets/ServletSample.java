@@ -56,13 +56,7 @@ public class ServletSample extends HttpServlet {
 //      if (credential != null && credential.getAccessToken() != null) {
 //          System.out.println("user 1 found" );
 //      }
-      
 
-
-      
-     
-      
-     
       
       String name = request.getParameter("firstName").trim();
       String surname = request.getParameter("secondName").trim();
@@ -89,25 +83,18 @@ public class ServletSample extends HttpServlet {
       p.setSurname(surname);
       p.setBirthDate(birthDate);
       
-//      String state
-//      
-//      npi.setState(state);
       session.setAttribute("newPatientInfo",p);
      
       lock.lock();
       try {
           flow = initializeFlow();
-
-          
-         // System.out.println("::: "+flow.newAuthorizationUrl().setRedirectUri(getRedirectUri(request)).set("prompt","consent").build());
-          
-          
-          
+ 
           String redirectUri = getRedirectUri(request);
           response.sendRedirect(flow.newAuthorizationUrl().setRedirectUri(redirectUri).set("prompt","consent").build());
 
       } finally {
           lock.unlock();
+         
       }
   }
 

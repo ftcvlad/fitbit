@@ -1013,6 +1013,11 @@ function serverProcessForm(deferred) {//frm data is DOM form element
     }
     else {
 
+
+        setStatus(errorSpanFit, "Retrieving...", "ui-state-highlight");
+        ajaxLocked = true;
+
+
         var actionType = $('input[name=radioFitTop]:checked').val();
         var requestUrl, method;
         if (actionType ==="fit"){
@@ -1025,10 +1030,9 @@ function serverProcessForm(deferred) {//frm data is DOM form element
         else if (actionType ==="DB"){
             requestUrl = "getDates";
         }
-        alert($("#datepicker").data("datepicker").arrayOfDates.sort());
         
-        setStatus(errorSpanFit, "Retrieving...", "ui-state-highlight");
-        ajaxLocked = true;
+        
+       
         jQuery.ajax({
             method: method,
             url: requestUrl,
