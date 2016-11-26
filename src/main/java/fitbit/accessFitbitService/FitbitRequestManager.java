@@ -15,9 +15,7 @@ import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.HttpResponse;
-import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import java.io.File;
@@ -29,9 +27,11 @@ import java.util.Arrays;
 import FitbitJsonBeans.DayResponse;
 import FitbitJsonBeans.MinuteData;
 import FitbitJsonBeans.DaySummary;
+import FitbitJsonBeans.DeviceData;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,69 +41,52 @@ import java.util.List;
  */
 public class FitbitRequestManager {
     
-    //do fitbit requests here?
-    public static HttpResponse executeGet(HttpTransport transport, JsonFactory jsonFactory, String accessToken, GenericUrl url) throws IOException {
-        Credential credential =  new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(accessToken);
-        HttpRequestFactory requestFactory = transport.createRequestFactory(credential);
-        return requestFactory.buildGetRequest(url).execute();
-    }
+//    //do fitbit requests here?
+//    public static HttpResponse executeGet(HttpTransport transport, JsonFactory jsonFactory, String accessToken, GenericUrl url) throws IOException {
+//        Credential credential =  new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(accessToken);
+//        HttpRequestFactory requestFactory = transport.createRequestFactory(credential);
+//        return requestFactory.buildGetRequest(url).execute();
+//    }
     
     
-   
-    //credential -- http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client/1.7.0-beta/com/google/api/client/auth/oauth2/Credential.java#Credential.refreshToken%28%29
-    //authorizationCodeFlow -- http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client/1.7.0-beta/com/google/api/client/auth/oauth2/AuthorizationCodeFlow.java#AuthorizationCodeFlow.createAndStoreCredential%28com.google.api.client.auth.oauth2.TokenResponse%2Cjava.lang.String%29
-    
-    public static HttpRequestFactory getRequestFactory(String credKeyInStore) {
+    public static String getLastSyncDate(String activeUserEmail,String fitbitId) throws Exception{
         
-     AuthorizationCodeFlow flow;
+        final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
+       
+        if (requestFactory==null){
+            throw new Exception("Could not create request factory!");
+        }
         
-        try{
-            flow = initializeFlow();
-            final Credential credential = flow.loadCredential(credKeyInStore);
-            if (credential != null && credential.getAccessToken() != null) {
-                
-                
-                System.out.println("token expires in: "+credential.getExpiresInSeconds());
-                if(credential.getExpiresInSeconds()<0){
-                    if (!credential.refreshToken()){
-                        
-                        //token couldn't refresh
-                       System.out.println("-- couldn't refresh token!");
-                       return null;
-                    }
-                    else{
-                         System.out.println("-- refreshed well");
-                    }
-                }
+        GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/devices.json");
 
-                HttpRequestFactory requestFactory = new NetHttpTransport()
-                  .createRequestFactory(new HttpRequestInitializer() {
-                      @Override
-                      public void initialize(HttpRequest request) {
+        HttpRequest request = requestFactory.buildGetRequest(requestUrl);
+        HttpResponse response = request.execute();
+        
+        if (response.isSuccessStatusCode()) {
 
-                          request.getHeaders().setAccept("application/json");
-                          request.getHeaders().setAuthorization("Bearer " + credential.getAccessToken());
-
-                      }
-                  });
-                
-                return requestFactory;
-                
-                
+            String responseAsString = response.parseAsString();
+            Gson gson = new Gson();
+           
+            ArrayList<DeviceData> devices = gson.fromJson(responseAsString, new TypeToken<ArrayList<DeviceData>>(){}.getType());
+            
+            if (devices.size()>1){
+                throw new Exception("There can be only 1 fitbit device associated with each account!");
+            }
+            else if (devices.isEmpty()){
+                return "1900-00-00";//all dates are considered to be noSync if no device is linked to the account!
             }
             else{
-                
-                System.out.println("Patient not found in store!");
-                return null;
-                
-            }   
-        }
-        catch(IOException ioe){
-            System.out.println(ioe.getMessage());
-            return null;
+                return devices.get(0).getLastSyncTime().substring(0,10);
+                        
+            }
+
+        } else {
+            throw new Exception("Issue with the server call (device): " + response.getStatusMessage());
         }
         
+        
     }
+   
     
     
     //http://www.programcreek.com/java-api-examples/index.php?api=com.google.api.client.auth.oauth2.StoredCredential -- good one!!!
@@ -111,6 +94,7 @@ public class FitbitRequestManager {
         
         
         final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
+       
         
         if (requestFactory==null){
             throw new Exception("Could not create request factory!");
@@ -127,7 +111,10 @@ public class FitbitRequestManager {
                 GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + dateString+ "/" + dateString + ".json");
 
                 HttpRequest request = requestFactory.buildGetRequest(requestUrl);
+                
+                System.out.println("execute started: "+System.currentTimeMillis() );
                 HttpResponse response = request.execute();
+                System.out.println("execute ended: "+System.currentTimeMillis() );
 
                 if (response.isSuccessStatusCode()) {
 
@@ -216,7 +203,59 @@ public class FitbitRequestManager {
     }
     
     
-    
+     //credential -- http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client/1.7.0-beta/com/google/api/client/auth/oauth2/Credential.java#Credential.refreshToken%28%29
+    //authorizationCodeFlow -- http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client/1.7.0-beta/com/google/api/client/auth/oauth2/AuthorizationCodeFlow.java#AuthorizationCodeFlow.createAndStoreCredential%28com.google.api.client.auth.oauth2.TokenResponse%2Cjava.lang.String%29
+    public static HttpRequestFactory getRequestFactory(String credKeyInStore) {
+        
+     AuthorizationCodeFlow flow;
+        
+        try{
+            flow = initializeFlow();
+            final Credential credential = flow.loadCredential(credKeyInStore);
+            if (credential != null && credential.getAccessToken() != null) {
+                
+                
+                System.out.println("token expires in: "+credential.getExpiresInSeconds());
+                if(credential.getExpiresInSeconds()<0){
+                    if (!credential.refreshToken()){
+                        
+                        //token couldn't refresh
+                       System.out.println("-- couldn't refresh token!");
+                       return null;
+                    }
+                    else{
+                         System.out.println("-- refreshed well");
+                    }
+                }
+
+                HttpRequestFactory requestFactory = new NetHttpTransport()
+                  .createRequestFactory(new HttpRequestInitializer() {
+                      @Override
+                      public void initialize(HttpRequest request) {
+
+                          request.getHeaders().setAccept("application/json");
+                          request.getHeaders().setAuthorization("Bearer " + credential.getAccessToken());
+
+                      }
+                  });
+                
+                return requestFactory;
+                
+                
+            }
+            else{
+                
+                System.out.println("Patient not found in store!");
+                return null;
+                
+            }   
+        }
+        catch(IOException ioe){
+            System.out.println(ioe.getMessage());
+            return null;
+        }
+        
+    }
     
    protected static AuthorizationCodeFlow initializeFlow() throws IOException {
 

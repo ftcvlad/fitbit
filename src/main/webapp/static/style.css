@@ -62,7 +62,15 @@ body{
 
 }
 
+#datepicker{
+    position: relative;
+    z-index: 1000;
 
+}
+
+.ui-tooltip {
+   z-index:1001;
+}
 
 
 

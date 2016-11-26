@@ -157,8 +157,8 @@
                      <label for="frq" class="selectorLabel">Select frequency</label>
                      <select name="frq" id="frq">
                         <option value="1">1 min</option>
-                        <option value="5">5 min</option>
-                        <option value="15"  selected="selected"> 15 min</option>
+                        <option value="5" selected="selected">5 min</option>
+                        <option value="15"  > 15 min</option>
                         <option value="30">30 min</option>
                         <option value="60">1 hour</option>
                      </select>
@@ -166,9 +166,9 @@
                      
                      <label class="selectorLabel" for="graphType">Graph type</label>
                      <select name="graphType" id="graphType">
-                         <option value="LC" >Line</option>
+                         <option value="LC" selected="selected" >Line</option>
                         <option value="LS" >LineStacked</option>
-                        <option value="HL" selected="selected" >RadarLine</option>
+                        <option value="HL"  >RadarLine</option>
                         <option value="HS">RadarStacked</option>
                         <option value="HP">RadarStackedPercent</option>
                      </select>

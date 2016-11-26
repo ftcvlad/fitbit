@@ -6,6 +6,8 @@
 package fitbit.models;
 
 
+import FitbitJsonBeans.DayResponse;
+import FitbitJsonBeans.MinuteData;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.PreparedStatement;
@@ -24,13 +26,8 @@ import java.util.HashMap;
 public class DateManager {
     
     
-    
-    public HashMap<String,ArrayList<String>>  saveDates(String activeUserEmail, Connection conn, String fitbitId, String[][]  selectedData) throws SQLException, Exception{
-        
-            if (selectedData.length!=1441){
-                     throw new Exception("Bad input: != 1441");    
-            }
-     //AUTHENTICATION  
+    public static int removeAlreadySavedDates(String activeUserEmail, String fitbitId, Connection conn, ArrayList<String> selDates) throws SQLException, Exception{
+        //AUTHENTICATION  
             int pcpair_id;
             try (PreparedStatement authStmt = conn.prepareStatement( "SELECT PCpair_id "+
                     "FROM fitbit_patients "+
@@ -47,120 +44,183 @@ public class DateManager {
                     throw new Exception("Bad input: Current clinician cannot save for selected patient");    
                 }
             }
+        
+            
+        //LEAVE ONLY DATES THAT ARE NOT IN DATABASE or ARE IN DB, BUT NOT FULL OR NOT SYNCED
+      
+            String whereStr="where PCpair_id="+pcpair_id +" AND ( ";
+            for ( int i=0; i<selDates.size();i++){
+                 whereStr+= "Date=?||";
+            }
+            whereStr = whereStr.substring(0,whereStr.length()-2);//get rid of last ||
+           
+           
+            PreparedStatement test0Stmt = conn.prepareStatement("select Date, filling from Dates "+whereStr+");");
+
+            for ( int i=0; i<selDates.size();i++){
+                test0Stmt.setString(i+1, selDates.get(i));
+            }
+
+            ResultSet test0Rs = test0Stmt.executeQuery();
+
+
+            while(test0Rs.next()){
+                String dateFromDB = test0Rs.getString(1);
+
+                int index = selDates.indexOf(dateFromDB);
+                String filling = test0Rs.getString(2);
+                if (index!=-1 && (filling.equals("full") || filling.equals("noData"))){//if date in DB is already filled with data or 0s
+                    
+                    selDates.remove(index);
+                }
+            }
+            
+            return pcpair_id;
+        
+    }
+    
+    
+    public static HashMap<String,ArrayList<String>>  saveDates(String lastSyncDate, String activeUserEmail, Connection conn, int pcpair_id, ArrayList<DayResponse>  fitbitData, ArrayList<String> desiredDates) throws SQLException, Exception{
+        
+//            if (selectedData.length!=1441){
+//                     throw new Exception("Bad input: != 1441");    
+//            }
+     
+
+            
+
 
 
 
             ArrayList<String> fullDatesAdded = new ArrayList<>();
             ArrayList<String> partDatesAdded = new ArrayList<>();
+            ArrayList<String> noSyncDatesAdded = new ArrayList<>();
+            ArrayList<String> noDataDatesAdded = new ArrayList<>();
 
-            //INSERT DATES 
+            
+    //INSERT dates
             StringBuilder datesStringBuilder= new StringBuilder("Values ");
 
-            boolean hasNull;
-            for (int i=1;i<selectedData[0].length;i++){
-                hasNull= false;
-                double totalSteps = 0;
-                for (int j=1;j<1441;j++){
-                      if (selectedData[j][i]==null){
-                           hasNull= true;
-                      }
-                      else{
-                          totalSteps+=Double.parseDouble(selectedData[j][i]);
-                      }
-                }
+            ArrayList<String> addedDatesForInjection = new ArrayList<>();
+            //steps >0
+            for (int i=0;i<fitbitData.size();i++){
+                String date = fitbitData.get(i).getActivities_steps().get(0).getDateTime();
+                int  valueTot = fitbitData.get(i).getActivities_steps().get(0).getValue();
 
-                totalSteps = Math.floor(totalSteps);
-                if (hasNull){
-                    datesStringBuilder.append("(?,\"part\",").append(totalSteps).append(",").append(pcpair_id).append("),");//assume that by adding another file with part, we cannot get full (1441 rows)
-                    partDatesAdded.add(selectedData[0][i]);
+                if (date.compareTo(lastSyncDate)<0){
+                    datesStringBuilder.append("(?,\"full\",").append(valueTot).append(",").append(pcpair_id).append("),");
+                    fullDatesAdded.add(date);
+                    addedDatesForInjection.add(date);
                 }
-                else{
-                    datesStringBuilder.append("(?,\"full\",").append(totalSteps).append(",").append(pcpair_id).append("),");//assume that by adding another file with part, we cannot get full (1441 rows)
-                    fullDatesAdded.add(selectedData[0][i]);
-                }  
+                else if (date.compareTo(lastSyncDate)==0){
+                    datesStringBuilder.append("(?,\"part\",").append(valueTot).append(",").append(pcpair_id).append("),");
+                    partDatesAdded.add(date);
+                    addedDatesForInjection.add(date);
+                }
+                desiredDates.remove(desiredDates.indexOf(date));
             }
 
+            ArrayList<String> allPositiveStepsDates = new ArrayList<>(addedDatesForInjection);
+            
+            //steps ==0 or steps>0, but no data as synced>7 days
+            if (desiredDates.size()>0){
+
+                //store totalSteps ===0 dates (not synced or no data)
+                for (int i=0;i<desiredDates.size();i++){
+                      if (desiredDates.get(i).compareTo(lastSyncDate)<0){
+                            datesStringBuilder.append("(?,\"noData\",").append(0).append(",").append(pcpair_id).append("),");
+                            noDataDatesAdded.add(desiredDates.get(i));
+                            addedDatesForInjection.add(desiredDates.get(i));
+                      }
+                      else if (desiredDates.get(i).compareTo(lastSyncDate)==0){
+                            datesStringBuilder.append("(?,\"part\",").append(0).append(",").append(pcpair_id).append("),");
+                            partDatesAdded.add(desiredDates.get(i));
+                            addedDatesForInjection.add(desiredDates.get(i));
+                      }
+                      else if (desiredDates.get(i).compareTo(lastSyncDate)>0){
+                            datesStringBuilder.append("(?,\"noSync\",").append(0).append(",").append(pcpair_id).append("),");
+                            noSyncDatesAdded.add(desiredDates.get(i));
+                            addedDatesForInjection.add(desiredDates.get(i));
+                      }
+                }
+
+            }
+            
 
             String datesString = datesStringBuilder.substring(0,datesStringBuilder.length()-1);
 
 
             try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_dates(Date,filling,totalSteps,PCpair_id) "+datesString+
                     " ON DUPLICATE KEY UPDATE Date = Date, filling= VALUES(filling), totalSteps=VALUES(totalSteps), PCpair_id =  PCpair_id;")) {
-                for (int i=1;i<selectedData[0].length;i++){
-                    stmt.setString(i,selectedData[0][i]);
+                for (int i=1;i<addedDatesForInjection.size();i++){
+                    stmt.setString(i,addedDatesForInjection.get(i));
                 }
-
                 stmt.executeUpdate();
             }
 
 
-
-     //SELECT JUST INSERTED DATES
-
-
-            String whereStr="WHERE PCpair_id="+pcpair_id +" AND ( ";
-            for (int i=1;i<selectedData[0].length;i++){
-              whereStr+= "Date=?||";
-            }
-            whereStr = whereStr.substring(0,whereStr.length()-2);//get rid of last ||
-
-
-            PreparedStatement stmt2 = conn.prepareStatement("SELECT Date, date_id from fitbit_dates "+whereStr+");");
-
-            for (int i=1;i<selectedData[0].length;i++){
-                stmt2.setString(i, selectedData[0][i]);
-            }
-
-            ResultSet stmt2Rs = stmt2.executeQuery(); 
-
-
-    // 
-    //  //INSERT VALUES FOR EACH DATE (in arrToSave all have steps >0). batch is slower! https://code.google.com/p/google-apps-script-issues/issues/detail?id=5421
-
-
-
-            int index;
-            PreparedStatement stmt3;
-            List<String> selectedData0AsList = Arrays.asList(selectedData[0]);
-            while(stmt2Rs.next()){
-
-
-                index = selectedData0AsList.indexOf(stmt2Rs.getString(1));
-                int date_id = stmt2Rs.getInt(2);
-
-
-                StringBuilder sb= new StringBuilder("VALUES ");
-                for ( int j=1;j<selectedData.length;j++){
-                    if (selectedData[j][index]!=null){
-                        sb.append("(").append(j).append(",").append(date_id).append(",?),");
-                    }
-                   
+            if (fitbitData.size()>0){
+    //SELECT JUST INSERTED DATES
+                String whereStr="WHERE PCpair_id="+pcpair_id +" AND ( ";
+                
+                
+                
+                for (int i=0; i<fitbitData.size();i++){
+                  whereStr+= "Date=?||";
                 }
-                String valuesString = sb.substring(0,sb.length()-1);//get rid of last comma
+                whereStr = whereStr.substring(0,whereStr.length()-2);//get rid of last ||
+              
+                
+                PreparedStatement stmt2 = conn.prepareStatement("SELECT Date, date_id from fitbit_dates "+whereStr+");");
+                
+               
+                for (int i=0;i<fitbitData.size();i++){
+                    stmt2.setString(i+1, fitbitData.get(i).getActivities_steps().get(0).getDateTime());
+                }
 
+                ResultSet stmt2Rs = stmt2.executeQuery();
+                
+    //INSERT VALUES FOR EACH DATE (in arrToSave all have steps >0).            
+                
+                
+                        
+                int indexInFitbitData;
+               
+                while(stmt2Rs.next()){
+                
+                
+                    indexInFitbitData = allPositiveStepsDates.indexOf(stmt2Rs.getString(1));
+                    int date_id = stmt2Rs.getInt(2);
+                 
+                    
+                    List<MinuteData> minuteDataPerDay =  fitbitData.get(indexInFitbitData).getActivities_steps_intraday().getDataset();
+                    
+                    
+                    StringBuilder sb= new StringBuilder("VALUES ");
+                    for ( int j=0;j<minuteDataPerDay.size();j++){
+                        sb.append("(").append(j).append(",").append(date_id).append(",").append(minuteDataPerDay.get(j).getValue()).append("),");
+                    }
+                    String valuesString = sb.substring(0,sb.length()-1);//get rid of last comma
 
+                    //if steps taken in the middle of minute, they may increase for the minute, so, would update
+                    stmt2 = conn.prepareStatement("INSERT INTO stepsintime(Time,date_id,value) "+valuesString+
+                                                    " ON DUPLICATE KEY UPDATE value=VALUES(value);");
 
-
-                stmt3 = conn.prepareStatement("INSERT INTO fitbit_stepsintime (Time,date_id,value) "+valuesString+
-                " ON DUPLICATE KEY UPDATE value=VALUES(value);");
-
-               int preparedSetIndex = 1; 
-               for ( int j=1;j<selectedData.length;j++){
-                   if (selectedData[j][index]!=null){
-                       stmt3.setInt(preparedSetIndex, (int)Math.round(Double.parseDouble(selectedData[j][index])));
-                       preparedSetIndex++;
-                   }
-
-               }
-
-               stmt3.execute();
-
+                    stmt2.execute();
+        
+                }
+    
             }
+    
 
             HashMap<String,ArrayList<String>> datesAddedMap = new HashMap<>();
             datesAddedMap.put("full", fullDatesAdded);
             datesAddedMap.put("part", partDatesAdded);
-
+            datesAddedMap.put("noData", noDataDatesAdded);
+            datesAddedMap.put("noSync", noSyncDatesAdded);
+            
+       
+            
             return datesAddedMap;
 
     }
@@ -180,28 +240,33 @@ public class DateManager {
     
     
     
-    public String[][] getDates(String[] datesToGet,String activeUserEmail, Connection conn, int pcpair_id, boolean intraday) throws SQLException, Exception{
+    public String[][] getDates(String[] datesToGet,String activeUserEmail, Connection conn, String userId, boolean intraday) throws SQLException, Exception{
         
+        
+       
+        int pcpair_id;
         try (PreparedStatement authStmt = conn.prepareStatement( "SELECT PCpair_id "+
                   "FROM fitbit_patients "+
-                  "WHERE Clinician=? AND PCpair_id=?;")) {
+                  "WHERE Clinician=? AND UserId=?;")) {
               authStmt.setString(1, activeUserEmail);
-              authStmt.setInt(2, pcpair_id);
+              authStmt.setString(2, userId);
               ResultSet authRs = authStmt.executeQuery();
 
               if (authRs.next()==false){//no user-clinician (again, user modified some javascript)
                   throw new Exception("Bad input: Current clinician cannot get selected patient's data");    
               }
+              else{
+                  pcpair_id = authRs.getInt(1);
+              }
         }
      
-  
-
 
         //GET SELECTED DATES THAT ARE IN DATABASE. same for interday and intraday
-        String whereStr="WHERE PCpair_id="+pcpair_id+" AND (";
+        String whereStr="WHERE totalSteps!=0 AND PCpair_id="+pcpair_id+" AND (";
         for (String s : datesToGet) {
             whereStr+= "Date=?||";
         }
+        
         whereStr = whereStr.substring(0,whereStr.length()-2);//get rid of last ||
         whereStr+=")";
         
@@ -224,7 +289,7 @@ public class DateManager {
             rsDates.beforeFirst(); 
         }
         else {
-            throw new Exception("No data in specified range db");
+            return new String[0][0];
         }
         
         
@@ -241,7 +306,7 @@ public class DateManager {
                               String date = rsDates.getString(1);
                               int date_id = rsDates.getInt(2);
 
-
+                             
                               table[0][colIndex] = date;
                               stmt2 = conn.prepareStatement("SELECT value, Time "+
                                                             "FROM fitbit_stepsintime "+
@@ -260,6 +325,14 @@ public class DateManager {
                               stmt2.close();
                               colIndex++;
                 }
+                
+//                for (int i=0;i<table.length;i++){
+//                    for (int j=0;j<table[0].length;j++){
+//                        System.out.print(table[i][j]+" ");
+//                    }
+//                    System.out.println();
+//                }
+                
                 
                 return table;
 
@@ -313,6 +386,9 @@ public class DateManager {
                 return arrWithZeros;
 
         }
+        
+        
+        
 
 
     }

@@ -995,7 +995,6 @@ function updateTableListRemove(idsToRemove, datatable, table){
 
 function serverProcessForm(deferred) {//frm data is DOM form element
 
-
     if (ajaxLocked){return;}
 
 
@@ -1051,19 +1050,138 @@ function serverProcessForm(deferred) {//frm data is DOM form element
         }
         else if (actionType ==="fitSave"){
             
+            jQuery.ajax({
+                method: "post",
+                url: "SaveFromFitbit",
+                data: {selDates:JSON.stringify($("#datepicker").data("datepicker").arrayOfDates.sort()),
+                       fitbitId: fitbitId},
+                success: function (response, textStatus, jqXHR) {
+                       //processDatabaseData(intraday, response,deferred);
+                },
+                error: function (jqXHR, errorStatus, errorThrown) {
+                    if (jqXHR.responseText === "Session expired") {
+                        window.location = "Login";
+                    }
+
+                   setStatus($("#errorSpanFit"), jqXHR.responseText, "ui-state-error", deferred);
+                   clearChartSliderAreaAndGetMemoryBack();
+
+                },
+                complete: function () {
+                    ajaxLocked = false;
+                }
+            });
+            
+            
+            
+          
         }
         else if (actionType ==="DB"){
-            requestUrl = "getDates";
-        }
-        
-        
-       
-        
+           jQuery.ajax({
+                method: "get",
+                url: "RetrieveFromDb",
+                data: {selDates:JSON.stringify($("#datepicker").data("datepicker").arrayOfDates.sort()),
+                       intraday:intraday,
+                       fitbitId: fitbitId},
+                success: function (response, textStatus, jqXHR) {
+                       processDatabaseData(intraday, response,deferred);
+                },
+                error: function (jqXHR, errorStatus, errorThrown) {
+                    if (jqXHR.responseText === "Session expired") {
+                        window.location = "Login";
+                    }
 
+                   setStatus($("#errorSpanFit"), jqXHR.responseText, "ui-state-error", deferred);
+                   clearChartSliderAreaAndGetMemoryBack();
+
+                },
+                complete: function () {
+                    ajaxLocked = false;
+                }
+            });
+        }
 
     }
+}
 
 
+
+
+//processDatabaseData and processFitbitData are nearly identical! but different response formats + cleaner having them separate
+function processDatabaseData(intraday, response, deferred){
+    //[[2016-06-09,2016-06-10]["12","14"]["234","1212"]...]  for intraday -> add time column + respective frequency + parseInt
+    //[[Date,Total steps][2016-06-09,"325876"][2016-06-10,"213111"]...] for interday -> parseInt
+    
+   
+
+    if (response.length===0){
+        setStatus(errorSpanFit, "Db has no data for specified range", "ui-state-highlight", deferred);
+        clearChartSliderAreaAndGetMemoryBack();
+        return;
+    }
+    
+    var errorSpanFit = $("#errorSpanFit");
+
+
+    
+    var allDayData = response;
+    var selectedData;
+    
+    if (intraday===true){
+        
+        selectedData = [['Time']];
+        var frqMinutes = parseInt($("#frq").val());
+       
+        //ADD TIME COLUMN
+        addTimeColumn(selectedData, frqMinutes);
+
+
+        //GENERATE SELECTED DATA
+        var totalStepsForPeriod = null;
+      
+        for (var i=0;i<allDayData[0].length;i++){
+        
+            selectedData[0].push(allDayData[0][i]);
+
+            var dataAvailableLength = allDayData.length;
+            var itemsPushed = 0;
+
+            for (j = 1; j < dataAvailableLength; j++) {
+                if (allDayData[j][i]!==null){
+                    totalStepsForPeriod += parseInt(allDayData[j][i]);
+                }
+                if (j  % frqMinutes === 0 || j === (dataAvailableLength - 1)) {//add data every f hours or leftovers
+                    selectedData[itemsPushed + 1].push(totalStepsForPeriod);
+                    totalStepsForPeriod = null;
+                    itemsPushed++;
+                }
+            }
+        }
+    }
+    else if (intraday===false){
+           
+        console.log(allDayData[0]);
+        for (var i=1;i<allDayData.length;i++){
+            allDayData[i][1] = parseInt(allDayData[i][1]);
+        }
+        selectedData = allDayData;
+    }
+    
+  
+ 
+    
+    if (deferred===undefined){
+        setStatus(errorSpanFit, "Drawing data...", "ui-state-highlight");
+        drawGraph($("#graphType").val(), "Fitbit", 'line_chart_div', "slider_div", "range", selectedData, frqMinutes);
+        setStatus(errorSpanFit, "Done", "ui-state-highlight");
+    }
+    else{//if combined tab, return selectedData to callback
+       deferred.resolve(selectedData);
+    }
+    
+    
+    
+    
 }
 
 
@@ -1071,9 +1189,27 @@ function serverProcessForm(deferred) {//frm data is DOM form element
 
 
 
-
-
 function processFitbitData(intraday, response, deferred){
+    //response== [o,o,o,o], where o is
+        //  {
+        //    "activities-log-steps":[
+        //        {"dateTime":"2014-09-05","value":1433}
+        //    ],
+        //    "activities-log-steps-intraday":{
+        //        "datasetInterval":1,
+        //        "dataset":[
+        //            {"time":"00:00:00","value":0},
+        //            {"time":"00:01:00","value":0},
+        //        ]
+        //    }
+        //}
+  
+    
+    if (response.length===0){
+        setStatus(errorSpanFit, "No data on selected dates", "ui-state-highlight", deferred);
+        clearChartSliderAreaAndGetMemoryBack();
+        return;
+    }
     
     var errorSpanFit = $("#errorSpanFit");
     
@@ -1081,46 +1217,20 @@ function processFitbitData(intraday, response, deferred){
     var allDayData = response;
     
 
-    if (allDayData.length===0){
-        setStatus(errorSpanFit, "No data on selected dates", "ui-state-highlight", deferred);
-        clearChartSliderAreaAndGetMemoryBack();
-        return;
-    }
+   
     
     
     var selectedData;
     
     if (intraday) {
     
-
         selectedData = [['Time']];
         var frqMinutes = parseInt($("#frq").val());
 
         //ADD TIME COLUMN
+        addTimeColumn(selectedData, frqMinutes);
 
-
-        var zeroDate = new Date(0, 0, 0, 0, 0, 0, 0);
-        var hh;
-        var mm;
-        for (var n = 0; n < 24 * 60 / frqMinutes; n++) {
-
-            zeroDate.setMinutes(zeroDate.getMinutes() + frqMinutes);
-            hh = zeroDate.getHours() + "";
-            if (hh.length < 2) {
-                hh = "0" + hh;
-            }
-            mm = zeroDate.getMinutes() + "";
-            if (mm.length < 2) {
-                mm = "0" + mm;
-            }
-
-            var str = hh + ":" + mm;
-            str = str === "00:00" ? "24:00" : str;
-
-
-            selectedData.push([str]);
-        }
-
+   
         //GENERATE SELECTED DATA
 
         var totalStepsForPeriod = 0;
@@ -1154,10 +1264,6 @@ function processFitbitData(intraday, response, deferred){
 
         }
         
-        
-        
-        
-        
 
     }//end of intraday if
     else {          //INTERDAY
@@ -1165,17 +1271,14 @@ function processFitbitData(intraday, response, deferred){
  
         selectedData = [['Date', 'Steps summary']];
 
-
         for (var j = 0; j < allDayData[0]["activities-steps"].length; j++) {
             selectedData.push([allDayData[0]["activities-steps"][j]["dateTime"], 
                                         parseInt(allDayData[0]["activities-steps"][j]["value"])]);
         }
-        
-      
     }
     
     
-    
+   
     if (deferred===undefined){
         setStatus(errorSpanFit, "Drawing data...", "ui-state-highlight");
         drawGraph($("#graphType").val(), "Fitbit", 'line_chart_div', "slider_div", "range", selectedData, frqMinutes);
@@ -1186,17 +1289,33 @@ function processFitbitData(intraday, response, deferred){
     }
     
     
-    
-    
-    
-    
-
-    
-    
-    
 }
 
 
+
+function addTimeColumn(selectedData, frqMinutes){
+    
+        var zeroDate = new Date(0, 0, 0, 0, 0, 0, 0);
+        var hh;
+        var mm;
+        for (var n = 0; n < 24 * 60 / frqMinutes; n++) {
+
+            zeroDate.setMinutes(zeroDate.getMinutes() + frqMinutes);
+            hh = zeroDate.getHours() + "";
+            if (hh.length < 2) {
+                hh = "0" + hh;
+            }
+            mm = zeroDate.getMinutes() + "";
+            if (mm.length < 2) {
+                mm = "0" + mm;
+            }
+
+            var str = hh + ":" + mm;
+            str = str === "00:00" ? "24:00" : str;
+
+            selectedData.push([str]);
+        }
+}
 
 
 

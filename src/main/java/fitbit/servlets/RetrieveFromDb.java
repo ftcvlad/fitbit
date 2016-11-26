@@ -29,8 +29,8 @@ import javax.sql.DataSource;
  *
  * @author Vlad
  */
-@WebServlet(name = "GetDates", urlPatterns = {"/getDates"})
-public class GetDates extends HttpServlet {
+@WebServlet(name = "RetrieveFromDb", urlPatterns = {"/RetrieveFromDb"})
+public class RetrieveFromDb extends HttpServlet {
 
     private DataSource dataSource;
     
@@ -59,13 +59,13 @@ public class GetDates extends HttpServlet {
          
             conn= dataSource.getConnection();
          
-            int pcpair_id =  Integer.parseInt(request.getParameter("id"));
-            String[] datesToGet =  new Gson().fromJson(request.getParameter("allDates"),String[].class);
+            String userId =  request.getParameter("fitbitId");
+            String[] datesToGet =  new Gson().fromJson(request.getParameter("selDates"),String[].class);
             boolean intraday = Boolean.parseBoolean(request.getParameter("intraday"));
             
 
             DateManager dm = new DateManager();
-            String [][] responseArray = dm.getDates(datesToGet, activeUserEmail, conn, pcpair_id,intraday);
+            String [][] responseArray = dm.getDates(datesToGet, activeUserEmail, conn, userId,intraday);
             
             String jsonResponse = new Gson().toJson(responseArray);
             response.setContentType("application/json");
