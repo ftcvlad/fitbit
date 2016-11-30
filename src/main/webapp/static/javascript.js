@@ -1056,7 +1056,7 @@ function serverProcessForm(deferred) {//frm data is DOM form element
                 data: {selDates:JSON.stringify($("#datepicker").data("datepicker").arrayOfDates.sort()),
                        fitbitId: fitbitId},
                 success: function (response, textStatus, jqXHR) {
-                       //processDatabaseData(intraday, response,deferred);
+                         dbSaveSucceed(response,fitbitId, intraday, deferred);
                 },
                 error: function (jqXHR, errorStatus, errorThrown) {
                     if (jqXHR.responseText === "Session expired") {
@@ -1103,6 +1103,32 @@ function serverProcessForm(deferred) {//frm data is DOM form element
 
     }
 }
+
+
+
+function dbSaveSucceed(response, fitbitId, intraday, deferred){
+    
+    
+    var frqMinutes = parseInt($("#frq").val());
+    
+    console.log(response);
+    
+ 
+    var fillings = response.fillings;
+    var data = response.data;
+    
+    
+    $('#userIDselect option[value="'+fitbitId+'"]').data("foo",fillings);
+    
+    processFitbitData(intraday, data, deferred);
+    
+    
+   
+    
+ 
+}
+
+
 
 
 
@@ -1204,6 +1230,7 @@ function processFitbitData(intraday, response, deferred){
         //    }
         //}
   
+    var errorSpanFit = $("#errorSpanFit");
     
     if (response.length===0){
         setStatus(errorSpanFit, "No data on selected dates", "ui-state-highlight", deferred);
@@ -1211,7 +1238,7 @@ function processFitbitData(intraday, response, deferred){
         return;
     }
     
-    var errorSpanFit = $("#errorSpanFit");
+  
     
   
     var allDayData = response;
@@ -1593,7 +1620,7 @@ function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedDa
             width: 'auto',
             height: 600,
             // lineWidth: 1,
-            vAxis: {maxValue: 200, gridlines: {count: 10}, title:"Sum of vector magnitudes"},
+            vAxis: {maxValue: 200, gridlines: {count: 10}, title:"Steps"},
             // interpolateNulls: true,
             isStacked: false
         };
@@ -1678,7 +1705,7 @@ function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedDa
                 },
         
                 title: {
-                    text: 'Geneactiv: Sum of vector magnitudes',
+                    text: 'Fitbit: steps',
                     x: -80
                 },
         

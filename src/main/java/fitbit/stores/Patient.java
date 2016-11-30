@@ -55,8 +55,7 @@ public class Patient {
     }
     
     
-    
-   
+
     
     public void setName(String name){
         this.name = name;
@@ -74,7 +73,6 @@ public class Patient {
         return this.surname ;
     }
     
-   
     
     public ArrayList<String> getFullDates(){
         return this.fullDates ;

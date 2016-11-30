@@ -11,8 +11,10 @@ import com.google.gson.reflect.TypeToken;
 import fitbit.accessFitbitService.FitbitRequestManager;
 import fitbit.models.DateManager;
 import fitbit.models.User;
+import fitbit.stores.Patient;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -71,7 +73,7 @@ public class SaveFromFitbit extends HttpServlet {
         HttpSession session = request.getSession(false);
         User us = (User) session.getAttribute("user");
         String activeUserEmail = us.getUsername();
-        Connection conn ;
+        Connection conn = null;
         
         try{
             conn= dataSource.getConnection();
@@ -92,7 +94,7 @@ public class SaveFromFitbit extends HttpServlet {
             String lastSyncDate = FitbitRequestManager.getLastSyncDate(activeUserEmail, fitbitId);
             
             //save to db
-            HashMap<String,ArrayList<String>> changeFillings = DateManager.saveDates(lastSyncDate,activeUserEmail, conn, pcpair_id, dataToSave, selDates);
+            HashMap<String,ArrayList<String>> hm = DateManager.saveDates(lastSyncDate,activeUserEmail, conn, pcpair_id, dataToSave, selDates);
             
              //CREATE PROPER PATIENT WITH PROPER SESSION :(
              //UPDATE SESSION :(
@@ -101,15 +103,93 @@ public class SaveFromFitbit extends HttpServlet {
              //... AND DON'T FORGET ABOUT COMPARISON
               
             
+            Patient targetPatient = null;
+            for (int i=0; i<us.allPatients.size();i++){
+                if (us.allPatients.get(i).getFitbitId().equals(fitbitId)){
+                    targetPatient = us.allPatients.get(i);
+                    
+                    //UPDATED PART DATES
+                    ArrayList<String> currentPartDates = targetPatient.getPartDates();
+                    ArrayList<String> addedPartDates = hm.get("part");
+                    for (String str : addedPartDates){
+                        if (!currentPartDates.contains(str)){
+                           currentPartDates.add(str);
+                        }
+                    }
+
+                    //UPDATED FULL DATES
+                    ArrayList<String> currentFullDates =targetPatient.getFullDates();
+                    ArrayList<String> addedFullDates = hm.get("full");
+                    for (String str : addedFullDates){
+                        if (!currentFullDates.contains(str)){
+                           currentFullDates.add(str);
+                        }
+                    }
+                    
+                    //UPDATED NOSYNC DATES
+                    ArrayList<String> currentNoSyncDates = targetPatient.getNosyncDates();
+                    ArrayList<String> addedNoSyncDates = hm.get("nosync");
+                    for (String str : addedNoSyncDates){
+                        if (!currentNoSyncDates.contains(str)){
+                           currentNoSyncDates.add(str);
+                        }
+                    }
+                    
+                    //UPDATED nodata dates
+                    ArrayList<String> currentNodataDates = targetPatient.getNodataDates();
+                    ArrayList<String> addedNodataDates = hm.get("nodata");
+                    for (String str : addedNodataDates){
+                        if (!currentNodataDates.contains(str)){
+                           currentNodataDates.add(str);
+                        }
+                    }
+                    
+                    break;
+                }
+            }
+            if (targetPatient==null){
+                throw new Exception("Patient not in current session-- shouln't happen");
+            }
+            
+            hm.put("part",targetPatient.getPartDates());
+            hm.put("full",targetPatient.getFullDates());
+            hm.put("nodata",targetPatient.getNodataDates());
+            hm.put("nosync",targetPatient.getNosyncDates());
+             
+             
+            HashMap<String,Object> responseHM = new HashMap<>();
+            responseHM.put("fillings", hm);
+            responseHM.put("data",dataToSave);
+            
+            
+            
+            String jsonResponse = new Gson().toJson(responseHM);
+            
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().print(jsonResponse);
+             
+             
             
             
         }
-        catch(Exception e){
-            
-
-            response.setContentType("text/plain");
-            response.setStatus(400);
-            response.getWriter().write(e.getMessage());
+        catch (SQLException sqle){
+                sqle.printStackTrace();
+                response.setContentType("text/plain");
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.getWriter().write("Database error");
+        }
+        catch(Exception  e){
+             e.printStackTrace();
+             response.setContentType("text/plain");
+             response.setStatus(400);
+             response.getWriter().write(e.getMessage());
+        }
+        finally{
+                if (conn != null){
+                    try {conn.close();} 
+                    catch (SQLException ignore) { }
+                }
         }
         
         

@@ -55,7 +55,7 @@ public class DateManager {
             whereStr = whereStr.substring(0,whereStr.length()-2);//get rid of last ||
            
            
-            PreparedStatement test0Stmt = conn.prepareStatement("select Date, filling from Dates "+whereStr+");");
+            PreparedStatement test0Stmt = conn.prepareStatement("select Date, filling from fitbit_dates "+whereStr+");");
 
             for ( int i=0; i<selDates.size();i++){
                 test0Stmt.setString(i+1, selDates.get(i));
@@ -85,11 +85,6 @@ public class DateManager {
 //            if (selectedData.length!=1441){
 //                     throw new Exception("Bad input: != 1441");    
 //            }
-     
-
-            
-
-
 
 
             ArrayList<String> fullDatesAdded = new ArrayList<>();
@@ -152,8 +147,8 @@ public class DateManager {
 
             try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO fitbit_dates(Date,filling,totalSteps,PCpair_id) "+datesString+
                     " ON DUPLICATE KEY UPDATE Date = Date, filling= VALUES(filling), totalSteps=VALUES(totalSteps), PCpair_id =  PCpair_id;")) {
-                for (int i=1;i<addedDatesForInjection.size();i++){
-                    stmt.setString(i,addedDatesForInjection.get(i));
+                for (int i=0;i<addedDatesForInjection.size();i++){
+                    stmt.setString(i+1,addedDatesForInjection.get(i));
                 }
                 stmt.executeUpdate();
             }
@@ -198,12 +193,12 @@ public class DateManager {
                     
                     StringBuilder sb= new StringBuilder("VALUES ");
                     for ( int j=0;j<minuteDataPerDay.size();j++){
-                        sb.append("(").append(j).append(",").append(date_id).append(",").append(minuteDataPerDay.get(j).getValue()).append("),");
+                        sb.append("(").append(j+1).append(",").append(date_id).append(",").append(minuteDataPerDay.get(j).getValue()).append("),");
                     }
                     String valuesString = sb.substring(0,sb.length()-1);//get rid of last comma
 
                     //if steps taken in the middle of minute, they may increase for the minute, so, would update
-                    stmt2 = conn.prepareStatement("INSERT INTO stepsintime(Time,date_id,value) "+valuesString+
+                    stmt2 = conn.prepareStatement("INSERT INTO fitbit_stepsintime(Time,date_id,value) "+valuesString+
                                                     " ON DUPLICATE KEY UPDATE value=VALUES(value);");
 
                     stmt2.execute();
@@ -216,8 +211,8 @@ public class DateManager {
             HashMap<String,ArrayList<String>> datesAddedMap = new HashMap<>();
             datesAddedMap.put("full", fullDatesAdded);
             datesAddedMap.put("part", partDatesAdded);
-            datesAddedMap.put("noData", noDataDatesAdded);
-            datesAddedMap.put("noSync", noSyncDatesAdded);
+            datesAddedMap.put("nodata", noDataDatesAdded);
+            datesAddedMap.put("nosync", noSyncDatesAdded);
             
        
             
