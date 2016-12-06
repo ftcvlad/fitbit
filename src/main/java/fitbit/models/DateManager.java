@@ -205,8 +205,13 @@ public class DateManager {
                     
                     
                     StringBuilder sb= new StringBuilder("VALUES ");
+                    int minuteSteps ;
                     for ( int j=0;j<minuteDataPerDay.size();j++){
-                        sb.append("(").append(j+1).append(",").append(date_id).append(",").append(minuteDataPerDay.get(j).getValue()).append("),");
+                        minuteSteps = minuteDataPerDay.get(j).getValue();
+                        if (minuteSteps>0){
+                            sb.append("(").append(j+1).append(",").append(date_id).append(",").append(minuteSteps).append("),");
+                        }
+                        
                     }
                     String valuesString = sb.substring(0,sb.length()-1);//get rid of last comma
 
@@ -267,10 +272,7 @@ public class DateManager {
               }
         }
      
-        
-        
-        
-        
+
         //GET SELECTED DATES THAT ARE IN DATABASE. same for interday and intraday
         String whereStr;
         if (intraday==true){
@@ -333,7 +335,12 @@ public class DateManager {
 
                               String val;
                               
-                              //nulls are there by default :)
+                              //fill all with 0s
+                              for (int j=1;j<=1440;j++){
+                                  table[j][colIndex]="0";
+                              }
+                              
+                              //replace for times that have steps>0 
                               while(rsValues.next()){
                                     val = ""+rsValues.getInt(1);
                                     table[rsValues.getInt(2)][colIndex] = val;

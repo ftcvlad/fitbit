@@ -323,7 +323,7 @@ var datepickerOnSelect = function (dateText, inst) {
 
     }
 
-   // console.log(inst.arrayOfDates);
+  
     $(this).val(inst.arrayOfDates.length);
 };
 
@@ -594,8 +594,7 @@ function processCsvString(allArrayData, selDates, deferred) {
             var nextSelectDataIndex = Math.floor(secondsPassed / targetFrequency) + 1;//+1 for header row in selectedData
 
 
-            //console.log("GOING THERE!: " + targetFrequency + "   " + selectedData[nextSelectDataIndex] + "  dataToWrite: " + allArrayData[traverseIndex][0].substring(11, 19));
-
+           
 
             var stepsForPeriod = 0;
             var everyNth = targetFrequency / csvFrequency;
@@ -615,8 +614,7 @@ function processCsvString(allArrayData, selDates, deferred) {
 
                     var timeStr = allArrayData[traverseIndex][0].substring(11, 19);
 
-                   // console.log(timeStr + "---" + selectedData[nextSelectDataIndex][0]);
-
+                
 
                     if (selectedData[nextSelectDataIndex][0] <= timeStr) {//BUG :(
 
@@ -1115,7 +1113,7 @@ function dbSaveSucceed(response, fitbitId, intraday, deferred){
     
     var frqMinutes = parseInt($("#frq").val());
     
-    console.log(response);
+   
     
  
     var fillings = response.fillings;
@@ -1190,7 +1188,7 @@ function processDatabaseData(intraday, response, deferred){
     }
     else if (intraday===false){
            
-        console.log(allDayData[0]);
+        
         for (var i=1;i<allDayData.length;i++){
             allDayData[i][1] = parseInt(allDayData[i][1]);
         }
@@ -1234,7 +1232,7 @@ function processFitbitData(intraday, response, deferred){
         //    }
         //}
   
-  console.log("kkk "+JSON.stringify(response));
+  
     var errorSpanFit = $("#errorSpanFit");
     
     if (response.length===0){
@@ -1280,9 +1278,9 @@ function processFitbitData(intraday, response, deferred){
 
                 if (j  % frqMinutes === 0 || j === (dataAvailableLength - 1)) {//add data every f hours or leftovers
 
-                    // console.log(itemsPushed+1+ "j: "+j);
+                    
                     selectedData[itemsPushed + 1].push(totalStepsForPeriod);
-                    //   console.log(selectedData[itemsPushed+1]);
+                   
                     totalStepsForPeriod = 0;
                     itemsPushed++;
                 }
@@ -1351,171 +1349,6 @@ function addTimeColumn(selectedData, frqMinutes){
 
 
 
-
-
-function processServerResponse(response, deferred){
-
-
-//    var errorSpanFit = $("#errorSpanFit");
-
-
-   
-
-//    if (response.changeFilling!==null){//add dates saved to DB
-//        
-//         var currFilling =  $('#userIDselect option[value="'+response.userID+'"]').data("foo");
-//    
-//         
-//        // from current filling delete dates that may have changed status (can be noSync or part) 
-//         var allChangedDates = response.changeFilling["part"].concat(response.changeFilling["full"]).concat(response.changeFilling["noSync"]).concat(response.changeFilling["noData"]);
-//         for (var i=0;i<currFilling["noSync"].length;i++){
-//             if (allChangedDates.indexOf(currFilling["noSync"][i])!==-1){
-//                 currFilling["noSync"].splice(i,1);
-//                 i--;
-//             }
-//         }
-//         for (var i=0;i<currFilling["part"].length;i++){
-//             if (allChangedDates.indexOf(currFilling["part"][i])!==-1){
-//                 currFilling["part"].splice(i,1);
-//                 i--;
-//             }
-//         } 
-//         
-//         //append new dates
-//         for (i in response.changeFilling){
-//             if (!response.changeFilling.hasOwnProperty(i)){continue};
-//         
-//             currFilling[i] = currFilling[i].concat(response.changeFilling[i]);
-//           
-//         }
-//         
-//
-//    }
-
-
-//    if (response.data.length===0){
-//         setStatus(errorSpanFit, "0 step dates were added. Nothing to draw", "ui-state-highlight", deferred);
-//         if ( $('#slider_div').children().length > 0 ) {//if initialized
-//            $("#slider_div").slider("destroy");
-//         }
-//         $("#line_chart_div").html('');
-//         $("#range").text('');
-//         return;
-//    }
-
-//    setStatus(errorSpanFit, "Processing data...", "ui-state-highlight");
-
-   
-
-//    var responseData;
-//    var selectedData;
-//
-//    if (response.intraday === true) {
-//    
-//        responseData = response.data;
-//        
-//
-//       
-//        
-//        selectedData = [['Time']];
-//        var frqMinutes = parseInt($("#frq").val());
-//
-//        //ADD TIME COLUMN
-//
-//
-//        var zeroDate = new Date(0, 0, 0, 0, 0, 0, 0);
-//        var hh;
-//        var mm;
-//        for (var n = 0; n < 24 * 60 / frqMinutes; n++) {
-//
-//            zeroDate.setMinutes(zeroDate.getMinutes() + frqMinutes);
-//            hh = zeroDate.getHours() + "";
-//            if (hh.length < 2) {
-//                hh = "0" + hh;
-//            }
-//            mm = zeroDate.getMinutes() + "";
-//            if (mm.length < 2) {
-//                mm = "0" + mm;
-//            }
-//
-//            var str = hh + ":" + mm;
-//            str = str == "00:00" ? "24:00" : str;
-//
-//
-//            selectedData.push([str]);
-//        }
-//
-//        //GENERATE SELECTED DATA
-//
-//        var totalStepsForPeriod = 0;
-//      
-//        for (var i=0;i<responseData.length;i++){
-//        
-//            selectedData[0].push(responseData[i]["activities-steps"][0]["dateTime"]);
-//
-//            var dataAvailableLength = responseData[i]["activities-steps-intraday"]["dataset"].length;//for current day can be <1440
-//            var itemsPushed = 0;
-//
-//            for (j = 1; j < dataAvailableLength; j++) {//ASSUME THERE IS always DATA IN THE BEGINNING OF THE DAY, BUT NOT IN END
-//
-//
-//
-//                totalStepsForPeriod += responseData[i]["activities-steps-intraday"]["dataset"][j]["value"];
-//
-//
-//                if (j  % frqMinutes == 0 || j == (dataAvailableLength - 1)) {//add data every f hours or leftovers
-//
-//                    // console.log(itemsPushed+1+ "j: "+j);
-//                    selectedData[itemsPushed + 1].push(totalStepsForPeriod);
-//                    //   console.log(selectedData[itemsPushed+1]);
-//                    totalStepsForPeriod = 0;
-//                    itemsPushed++;
-//                }
-//
-//            }
-//
-//
-//            for (var k = itemsPushed + 1; k < selectedData.length; k++) {//if day not ended AND no data from 23:59--00:00, because fitbit sends it with next day's data
-//                selectedData[k].push(null);
-//            }
-//
-//        }
-//
-//
-//    }//end of intraday if
-    
-//    else if (response.intraday == false) {
-//     
-//    
-//    
-//        responseData = response.data[0]["activities-steps"];
-//        selectedData = [['Date', 'Steps summary']];
-//
-//
-//        for (var j = 0; j < responseData.length; j++) {
-//            selectedData.push([responseData[j]["dateTime"], parseInt(responseData[j]["value"])]);
-//        }
-//
-//    }//end of interday else
-
-
-
-
-
-//    if (deferred===undefined){
-//          setStatus(errorSpanFit, "Drawing data...", "ui-state-highlight");
-//
-//          drawGraph($("#graphType").val(), "Fitbit", 'line_chart_div', "slider_div", "range", selectedData);
-//          setStatus(errorSpanFit, "Done", "ui-state-highlight");
-//    }
-//    else{//if combined tab, return selectedData to callback
-//    
-//       deferred.resolve(selectedData);
-//    }
-//    
-//    
-//     appsScriptLocked = false;
-}   
 
 
 //=========================================================================================================================================
@@ -1764,6 +1597,7 @@ function drawGraph(chartType, chartTitle, chartId, sliderId, rangeId, selectedDa
                             enabled: false
                         },
                         lineWidth: 1,
+                        //cropThreshold:1,//why it is not here? how knows? who remembers?
                         connectEnds:false,
                         stacking: (chartType==="HP")? 'percent':'normal'//percent,
                         
@@ -1833,8 +1667,8 @@ function processBoth(){
       
       $.when(deferred1, deferred2).done(function(dataFitbit, dataGene) {
           
-          console.log(dataFitbit[0]+" "+dataGene[0]);
-          console.log(dataFitbit.length+" "+dataGene.length);
+//          console.log(dataFitbit[0]+" "+dataGene[0]);
+//          console.log(dataFitbit.length+" "+dataGene.length);
           
           //add Fit/Gene to distinguish series' names
           for (var i=1;i<dataGene[0].length;i++){
@@ -1854,7 +1688,7 @@ function processBoth(){
           
           }
           
-          console.log("ia m good");
+          
           drawGraph("LC", "Comparison", 'line_chart_divCombined', "slider_divCombined", "rangeCombined", dataFitbit);//chart type could be $("#graphType").val(), but only line makes sense
           setStatus($("#errorSpanFit"), "Done", "ui-state-highlight");
           setStatus($("#errorSpanGENE"), "Done", "ui-state-highlight");
