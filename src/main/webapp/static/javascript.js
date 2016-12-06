@@ -117,7 +117,8 @@ $(function () {
                   '<span style="background-color:#68d898; width: 30px;height:10px; display: inline-block "></span><span> day saved to DB</span><br/>'+
                   '<span style="background-color:#78781a; width: 30px;height:10px; display: inline-block "></span><span> partly saved</span><br/>'+
                   '<span style="background-color:#bfbf90; width: 30px;height:10px; display: inline-block "></span><span> not synchronized</span><br/>'+
-                  '<span style="background-color:#357ae8; width: 30px;height:10px; display: inline-block "></span><span> selected</span><br/>';
+                  '<span style="background-color:#357ae8; width: 30px;height:10px; display: inline-block "></span><span> selected</span><br/>'+
+                  '<span style="background-color:#d14836; width: 30px;height:10px; display: inline-block "></span><span> lost</span><br/>';
        }
       }
     });
@@ -258,6 +259,9 @@ var datepickerBeforeShowDay = function (date) {
             }
             else if (dayTypesObj["nosync"].indexOf(str)>-1){
                 return [true, "noSync", ''];
+            }
+            else if (dayTypesObj["lost"].indexOf(str)>-1){
+                return [true, "lost", ''];
             }
         }
       
@@ -1230,6 +1234,7 @@ function processFitbitData(intraday, response, deferred){
         //    }
         //}
   
+  console.log("kkk "+JSON.stringify(response));
     var errorSpanFit = $("#errorSpanFit");
     
     if (response.length===0){

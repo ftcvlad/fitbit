@@ -22,7 +22,15 @@ public class DayResponse {
     @SerializedName("activities-steps-intraday")
     private IntradayData  activities_steps_intraday;
 
-    
+    boolean hasMinuteData;
+
+    public boolean isHasMinuteData() {
+        return hasMinuteData;
+    }
+
+    public void setHasMinuteData(boolean hasMinuteData) {
+        this.hasMinuteData = hasMinuteData;
+    }
     
     
     public List<DaySummary> getActivities_steps() {

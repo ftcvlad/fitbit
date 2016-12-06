@@ -89,7 +89,6 @@ body{
     background-color: #e4c2be ;
     background-image :none ;
     color: #ffffff ;
-
 }
 
 .ui-datepicker-calendar .full a {  
@@ -112,6 +111,14 @@ body{
     color: #ffffff ;
 
 }
+
+.ui-datepicker-calendar .lost a {  
+    background-color: #d14836 ;
+    background-image :none ;
+    color: #ffffff ;
+}
+
+
 
 .dateTypeTip{
     border-radius: 10px;

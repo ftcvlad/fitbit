@@ -96,11 +96,7 @@ public class SaveFromFitbit extends HttpServlet {
             //save to db
             HashMap<String,ArrayList<String>> hm = DateManager.saveDates(lastSyncDate,activeUserEmail, conn, pcpair_id, dataToSave, selDates);
             
-             //CREATE PROPER PATIENT WITH PROPER SESSION :(
-             //UPDATE SESSION :(
-             //RETURN CHANGEDFILLINGS TO SPECIAL METHOD IN JS
-             
-             //... AND DON'T FORGET ABOUT COMPARISON
+            
               
             
             Patient targetPatient = null;
@@ -144,6 +140,17 @@ public class SaveFromFitbit extends HttpServlet {
                         }
                     }
                     
+                    //UPDATED lost dates
+                    ArrayList<String> currentLostDates = targetPatient.getLostDates();
+                    ArrayList<String> addedLostDates = hm.get("lost");
+                    for (String str : addedLostDates){
+                        if (!currentLostDates.contains(str)){
+                           currentLostDates.add(str);
+                        }
+                    }
+                    
+                    
+                    
                     break;
                 }
             }
@@ -155,7 +162,7 @@ public class SaveFromFitbit extends HttpServlet {
             hm.put("full",targetPatient.getFullDates());
             hm.put("nodata",targetPatient.getNodataDates());
             hm.put("nosync",targetPatient.getNosyncDates());
-             
+            hm.put("lost",targetPatient.getLostDates()); 
              
             HashMap<String,Object> responseHM = new HashMap<>();
             responseHM.put("fillings", hm);

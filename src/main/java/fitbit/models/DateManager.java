@@ -46,7 +46,7 @@ public class DateManager {
             }
         
             
-        //LEAVE ONLY DATES THAT ARE NOT IN DATABASE or ARE IN DB, BUT NOT FULL OR NOT SYNCED
+        //LEAVE ONLY DATES THAT ARE NOT IN DATABASE or ARE IN DB, BUT PART or NOT SYNCED
       
             String whereStr="where PCpair_id="+pcpair_id +" AND ( ";
             for ( int i=0; i<selDates.size();i++){
@@ -69,7 +69,7 @@ public class DateManager {
 
                 int index = selDates.indexOf(dateFromDB);
                 String filling = test0Rs.getString(2);
-                if (index!=-1 && (filling.equals("full") || filling.equals("noData"))){//if date in DB is already filled with data or 0s
+                if (index!=-1 && (filling.equals("full") || filling.equals("noData") || filling.equals("lost"))){
                     
                     selDates.remove(index);
                 }
@@ -91,6 +91,7 @@ public class DateManager {
             ArrayList<String> partDatesAdded = new ArrayList<>();
             ArrayList<String> noSyncDatesAdded = new ArrayList<>();
             ArrayList<String> noDataDatesAdded = new ArrayList<>();
+            ArrayList<String> lostDatesAdded = new ArrayList<>();
 
             
     //INSERT dates
@@ -103,40 +104,45 @@ public class DateManager {
                 int  valueTot = fitbitData.get(i).getActivities_steps().get(0).getValue();
 
                 if (date.compareTo(lastSyncDate)<0){
-                    datesStringBuilder.append("(?,\"full\",").append(valueTot).append(",").append(pcpair_id).append("),");
-                    fullDatesAdded.add(date);
-                    addedDatesForInjection.add(date);
+                    
+                    if (fitbitData.get(i).isHasMinuteData()){
+                        datesStringBuilder.append("(?,\"full\",").append(valueTot).append(",").append(pcpair_id).append("),");
+                        fullDatesAdded.add(date);
+                    }
+                    else{//steps>0, but no minuteData => not synced for >7 days
+                        datesStringBuilder.append("(?,\"lost\",").append(valueTot).append(",").append(pcpair_id).append("),");
+                        lostDatesAdded.add(date);
+                    }
                 }
                 else if (date.compareTo(lastSyncDate)==0){
                     datesStringBuilder.append("(?,\"part\",").append(valueTot).append(",").append(pcpair_id).append("),");
                     partDatesAdded.add(date);
-                    addedDatesForInjection.add(date);
                 }
+                
+                addedDatesForInjection.add(date);
                 desiredDates.remove(desiredDates.indexOf(date));
             }
 
             ArrayList<String> allPositiveStepsDates = new ArrayList<>(addedDatesForInjection);
             
-            //steps ==0 or steps>0, but no data as synced>7 days
+            //steps ==0 
             if (desiredDates.size()>0){
 
-                //store totalSteps ===0 dates (not synced or no data)
+                //store totalSteps ===0 dates (no data dates)
                 for (int i=0;i<desiredDates.size();i++){
                       if (desiredDates.get(i).compareTo(lastSyncDate)<0){
                             datesStringBuilder.append("(?,\"noData\",").append(0).append(",").append(pcpair_id).append("),");
                             noDataDatesAdded.add(desiredDates.get(i));
-                            addedDatesForInjection.add(desiredDates.get(i));
                       }
                       else if (desiredDates.get(i).compareTo(lastSyncDate)==0){
                             datesStringBuilder.append("(?,\"part\",").append(0).append(",").append(pcpair_id).append("),");
                             partDatesAdded.add(desiredDates.get(i));
-                            addedDatesForInjection.add(desiredDates.get(i));
                       }
                       else if (desiredDates.get(i).compareTo(lastSyncDate)>0){
                             datesStringBuilder.append("(?,\"noSync\",").append(0).append(",").append(pcpair_id).append("),");
-                            noSyncDatesAdded.add(desiredDates.get(i));
-                            addedDatesForInjection.add(desiredDates.get(i));
+                            noSyncDatesAdded.add(desiredDates.get(i)); 
                       }
+                      addedDatesForInjection.add(desiredDates.get(i));
                 }
 
             }
@@ -153,6 +159,13 @@ public class DateManager {
                 stmt.executeUpdate();
             }
 
+            //remove no-minute-data dates before inserting steps
+            for (int j = fitbitData.size()-1; j >= 0; j--) {
+                    if (!fitbitData.get(j).isHasMinuteData()){
+                        fitbitData.remove(j);
+                    }
+            }
+            
 
             if (fitbitData.size()>0){
     //SELECT JUST INSERTED DATES
@@ -210,11 +223,10 @@ public class DateManager {
 
             HashMap<String,ArrayList<String>> datesAddedMap = new HashMap<>();
             datesAddedMap.put("full", fullDatesAdded);
+            datesAddedMap.put("lost", lostDatesAdded);
             datesAddedMap.put("part", partDatesAdded);
             datesAddedMap.put("nodata", noDataDatesAdded);
             datesAddedMap.put("nosync", noSyncDatesAdded);
-            
-       
             
             return datesAddedMap;
 
@@ -255,9 +267,19 @@ public class DateManager {
               }
         }
      
-
+        
+        
+        
+        
         //GET SELECTED DATES THAT ARE IN DATABASE. same for interday and intraday
-        String whereStr="WHERE totalSteps!=0 AND PCpair_id="+pcpair_id+" AND (";
+        String whereStr;
+        if (intraday==true){
+            whereStr ="WHERE (filling='full' || (filling='part' AND totalSteps>0)) AND PCpair_id="+pcpair_id+" AND (";
+        }
+        else{
+            whereStr="WHERE totalSteps>0 AND PCpair_id="+pcpair_id+" AND (";
+        }
+        
         for (String s : datesToGet) {
             whereStr+= "Date=?||";
         }
@@ -278,7 +300,7 @@ public class DateManager {
         ResultSet rsDates = stmt.executeQuery();   
      
     
-        int rowcountTable = 0;
+        int rowcountTable;
         if (rsDates.last()) {
             rowcountTable = rsDates.getRow();
             rsDates.beforeFirst(); 
@@ -321,12 +343,6 @@ public class DateManager {
                               colIndex++;
                 }
                 
-//                for (int i=0;i<table.length;i++){
-//                    for (int j=0;j<table[0].length;j++){
-//                        System.out.print(table[i][j]+" ");
-//                    }
-//                    System.out.println();
-//                }
                 
                 
                 return table;

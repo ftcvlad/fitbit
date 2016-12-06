@@ -16,6 +16,7 @@ public class Patient {
     ArrayList<String> partDates = new ArrayList<>();
     ArrayList<String> nosyncDates = new ArrayList<>();
     ArrayList<String> nodataDates = new ArrayList<>();
+    ArrayList<String> lostDates = new ArrayList<>();
     String name;
     String surname;
     String birthDate;
@@ -51,6 +52,9 @@ public class Patient {
         else if (filling.equals("noData")){
             nodataDates.add(date);
         }
+        else if (filling.equals("lost")){
+            lostDates.add(date);
+        }
         
     }
     
@@ -74,6 +78,11 @@ public class Patient {
     }
     
     
+    public ArrayList<String> getLostDates(){
+        return this.lostDates ;
+    }
+    
+    
     public ArrayList<String> getFullDates(){
         return this.fullDates ;
     }
@@ -88,17 +97,13 @@ public class Patient {
         return nosyncDates;
     }
 
-    public void setNosyncDates(ArrayList<String> nosyncDates) {
-        this.nosyncDates = nosyncDates;
-    }
+
 
     public ArrayList<String> getNodataDates() {
         return nodataDates;
     }
 
-    public void setNodataDates(ArrayList<String> nodataDates) {
-        this.nodataDates = nodataDates;
-    }
+ 
     
     
     public void setBirthDate(String birthDate){
@@ -109,13 +114,9 @@ public class Patient {
         return this.birthDate;
     }
     
-    public void setFullDates(){
-        this.fullDates = new ArrayList<>(); 
-    }
-    public void setPartDates(){
-        this.partDates = new ArrayList<>(); 
-    }
-    
+
+ 
+ 
     
     
     @Override

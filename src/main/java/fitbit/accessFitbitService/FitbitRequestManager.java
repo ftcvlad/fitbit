@@ -124,12 +124,15 @@ public class FitbitRequestManager {
 
 
                     if (nextDayResult.getActivities_steps().get(0).getValue()!=0){
+                        nextDayResult.setHasMinuteData(false);
+                        
                         for (int i=0;i<  dayDataset.size();i++){
                             if (dayDataset.get(i).getValue()>0){//can be dates not synced for >7 days, steps>0, but no data. skip such
-                                allDaysData.add(nextDayResult);
+                                nextDayResult.setHasMinuteData(true);
                                 break;
                             }
                         }
+                        allDaysData.add(nextDayResult);
                     }
 
 

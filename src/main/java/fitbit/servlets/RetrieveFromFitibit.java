@@ -63,6 +63,12 @@ public class RetrieveFromFitibit extends HttpServlet {
             
             if (intraday==true){
                 allDaysData = FitbitRequestManager.retrieveFromFitbitIntraday(selDates,fitbitId, activeUserEmail);
+                
+                for (int j = allDaysData.size()-1; j >= 0; j--) {
+                    if (!allDaysData.get(j).isHasMinuteData()){
+                        allDaysData.remove(j);
+                    }
+                }
             }
             else{
                 allDaysData = FitbitRequestManager.retrieveFromFitbitInterday(selDates,fitbitId, activeUserEmail);

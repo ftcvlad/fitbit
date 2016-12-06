@@ -43,10 +43,12 @@ public class mainPage extends HttpServlet {
             String partDates = new Gson().toJson(us.allPatients.get(i).getPartDates()); 
             String nosyncDates = new Gson().toJson(us.allPatients.get(i).getNosyncDates());
             String nodataDates = new Gson().toJson(us.allPatients.get(i).getNodataDates());
+            String lostDates = new Gson().toJson(us.allPatients.get(i).getLostDates());
             
            
             //'  {"full":["date1","date2"...],"part":[]}  '
-            htmlString+= "<option value=\""+fitbitId+"\"  data-foo=\'{\"full\":"+fullDates+",\"part\":"+partDates+",\"nodata\":"+nodataDates+",\"nosync\":"+nosyncDates+"}\'>"+fullName+"</option>";
+            htmlString+= "<option value=\""+fitbitId+"\"  data-foo=\'{\"full\":"+fullDates+",\"part\":"+partDates+
+                    ",\"nodata\":"+nodataDates+",\"nosync\":"+nosyncDates+",\"lost\":"+lostDates+"}\'>"+fullName+"</option>";
 
         }
         
