@@ -10,3 +10,15 @@
         username="AppsScript" password="iamgoogle"
     />
 </Context>
+
+
+
+<!--<Context path="/2016-vlad-fitbit">
+    <Resource
+        name="jdbc/db" type="javax.sql.DataSource"
+        maxActive="100" maxIdle="30" maxWait="10000" 
+        url="jdbc:mysql://silva.computing.dundee.ac.uk/vladislavsdb"
+        driverClassName="com.mysql.jdbc.Driver"
+        username="vladislavs" password="834.vv.pwrd"
+    />
+</Context>-->

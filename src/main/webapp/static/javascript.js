@@ -1667,9 +1667,6 @@ function processBoth(){
       
       $.when(deferred1, deferred2).done(function(dataFitbit, dataGene) {
           
-//          console.log(dataFitbit[0]+" "+dataGene[0]);
-//          console.log(dataFitbit.length+" "+dataGene.length);
-          
           //add Fit/Gene to distinguish series' names
           for (var i=1;i<dataGene[0].length;i++){
                dataGene[0][i]+="Gen";

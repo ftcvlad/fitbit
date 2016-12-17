@@ -10,7 +10,6 @@ import com.google.api.client.auth.oauth2.AuthorizationCodeResponseUrl;
 import com.google.api.client.auth.oauth2.BearerToken;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.StoredCredential;
-import com.google.api.client.auth.oauth2.TokenResponse;
 import com.google.api.client.http.BasicAuthentication;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.HttpResponse;
@@ -26,14 +25,17 @@ import fitbit.stores.Patient;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -97,8 +99,11 @@ public class ServletCallbackSample extends HttpServlet  {
       lock.lock();
       try {
         if (flow == null) {
-          flow = initializeFlow();
+          flow = initializeFlow(getServletContext());
         }
+       
+        
+        //System.out.println("zajebatsia! --         "+getServletContext().getContextPath());
         
         //EXCHANGE CODE FOR TOKEN
         HttpResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).executeUnparsed();
@@ -192,16 +197,7 @@ public class ServletCallbackSample extends HttpServlet  {
         resp.setContentType("text/plain");
         resp.getWriter().write(errorResponse.getError());
   }
-/*
-  This is not used (???), but should match authorization redirect_uri
-  https://tools.ietf.org/html/rfc6749#section-4.1.3
-  
-  good read some day
-  http://security.stackexchange.com/questions/44214/what-is-the-purpose-of-oauth-2-0-redirect-uri-checking
- 
-  and more
-  http://homakov.blogspot.co.uk/2013/03/oauth1-oauth2-oauth.html
-  */
+
 
   protected String getRedirectUri(HttpServletRequest req) throws ServletException, IOException {
     GenericUrl url = new GenericUrl(req.getRequestURL().toString());
@@ -212,7 +208,19 @@ public class ServletCallbackSample extends HttpServlet  {
   }
 
 
-  protected AuthorizationCodeFlow initializeFlow() throws IOException {
+  protected AuthorizationCodeFlow initializeFlow(ServletContext context) throws IOException {
+      
+     
+    URL resourceUrl = context.getResource("/WEB-INF/tokens");
+    URI uri;
+    try{
+        uri = resourceUrl.toURI();
+    }
+    catch(URISyntaxException  use){
+        System.out.println("shouldn't happen");
+        return null;
+    }
+      
      return new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(),
         new NetHttpTransport(),
         new JacksonFactory(),
@@ -221,14 +229,10 @@ public class ServletCallbackSample extends HttpServlet  {
         "227T4W",
         "https://www.fitbit.com/oauth2/authorize").setScopes(Arrays.asList("activity","settings")).setCredentialDataStore(
             StoredCredential.getDefaultDataStore(
-                new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"))))
+                new FileDataStoreFactory(new File(uri))))
         .build();
 
   }
 
 
-//  protected String getUserId(HttpServletRequest req) throws ServletException, IOException {
-//    // return user ID
-//     return "4PDGJ9";//3VD94D
-//  }
 }

@@ -51,7 +51,7 @@ public class Login extends HttpServlet {
      
         String username = request.getParameter("username");
         String password = request.getParameter("password");
-        Map<String, String> messages = new HashMap<String, String>();
+        Map<String, String> messages = new HashMap<>();
 
         if (username == null || username.isEmpty()) {
             messages.put("username", "Please enter username");

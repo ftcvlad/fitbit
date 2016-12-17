@@ -32,8 +32,12 @@ import FitbitJsonBeans.DeviceData;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import javax.servlet.ServletContext;
 
 /**
  *
@@ -41,13 +45,13 @@ import java.util.List;
  */
 public class FitbitRequestManager {
     
-//    //do fitbit requests here?
-//    public static HttpResponse executeGet(HttpTransport transport, JsonFactory jsonFactory, String accessToken, GenericUrl url) throws IOException {
-//        Credential credential =  new Credential(BearerToken.authorizationHeaderAccessMethod()).setAccessToken(accessToken);
-//        HttpRequestFactory requestFactory = transport.createRequestFactory(credential);
-//        return requestFactory.buildGetRequest(url).execute();
-//    }
+
+    static ServletContext context; 
     
+    
+    public static void setContext (ServletContext con){
+        context= con;
+    }
     
     public static String getLastSyncDate(String activeUserEmail,String fitbitId) throws Exception{
         
@@ -262,7 +266,18 @@ public class FitbitRequestManager {
     
    protected static AuthorizationCodeFlow initializeFlow() throws IOException {
 
-  
+ 
+    
+    URL resourceUrl = context.getResource("/WEB-INF/tokens");
+    URI uri;
+    try{
+        uri = resourceUrl.toURI();
+    }
+    catch(URISyntaxException  use){
+        System.out.println("shouldn't happen");
+        return null;
+    }
+       
     AuthorizationCodeFlow.Builder acfb = new AuthorizationCodeFlow.Builder(
                     BearerToken.authorizationHeaderAccessMethod(),
                     new NetHttpTransport(),
@@ -274,7 +289,8 @@ public class FitbitRequestManager {
     
     acfb.setScopes(Arrays.asList("activity","settings"));
     
-    FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
+    FileDataStoreFactory ff = new FileDataStoreFactory(new File(uri));
+   
     acfb.setCredentialDataStore(StoredCredential.getDefaultDataStore(ff));
     return acfb.build();
     

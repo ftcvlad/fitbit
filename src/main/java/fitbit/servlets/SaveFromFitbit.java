@@ -87,6 +87,7 @@ public class SaveFromFitbit extends HttpServlet {
                 return;
             }
             
+            FitbitRequestManager.setContext(getServletContext());
             //retrieve data from Fitbit
             ArrayList<DayResponse> dataToSave = FitbitRequestManager.retrieveFromFitbitIntraday(selDates.toArray(new String[selDates.size()]),fitbitId,activeUserEmail);
             

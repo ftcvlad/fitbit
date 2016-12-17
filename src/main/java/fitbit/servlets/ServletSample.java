@@ -16,9 +16,13 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import fitbit.stores.Patient;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -50,12 +54,7 @@ public class ServletSample extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws IOException,ServletException  {
    
-//      flow = initializeFlow();
-//      
-//       Credential credential = flow.loadCredential("4PDGJ9");
-//      if (credential != null && credential.getAccessToken() != null) {
-//          System.out.println("user 1 found" );
-//      }
+
 
       
       String name = request.getParameter("firstName").trim();
@@ -87,7 +86,7 @@ public class ServletSample extends HttpServlet {
      
       lock.lock();
       try {
-          flow = initializeFlow();
+          flow = initializeFlow(getServletContext());
  
           String redirectUri = getRedirectUri(request);
           response.sendRedirect(flow.newAuthorizationUrl().setRedirectUri(redirectUri).set("prompt","consent").build());
@@ -110,9 +109,19 @@ public class ServletSample extends HttpServlet {
   }
 
 
-  protected AuthorizationCodeFlow initializeFlow() throws IOException {
-
-  
+  protected AuthorizationCodeFlow initializeFlow(ServletContext context) throws IOException {
+       
+    URL resourceUrl = context.getResource("/WEB-INF/tokens");
+    URI uri;
+    try{
+        uri = resourceUrl.toURI();
+    }
+    catch(URISyntaxException  use){
+        System.out.println("shouldn't happen");
+        return null;
+    }
+   
+    
     AuthorizationCodeFlow.Builder acfb = new AuthorizationCodeFlow.Builder(
                     BearerToken.authorizationHeaderAccessMethod(),
                     new NetHttpTransport(),
@@ -124,7 +133,7 @@ public class ServletSample extends HttpServlet {
     
     acfb.setScopes(Arrays.asList("activity","settings"));
     
-    FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
+    FileDataStoreFactory ff = new FileDataStoreFactory(new File(uri));
     acfb.setCredentialDataStore(StoredCredential.getDefaultDataStore(ff));
     return acfb.build();
     
