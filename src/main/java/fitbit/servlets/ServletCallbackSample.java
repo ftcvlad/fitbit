@@ -16,9 +16,9 @@ import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+import fitbit.stores.FitbitTokenResponse;
 import fitbit.models.PatientManager;
 import fitbit.models.User;
-import fitbit.stores.FitbitTokenResponse;
 import fitbit.stores.Patient;
 
 
@@ -103,7 +103,7 @@ public class ServletCallbackSample extends HttpServlet  {
         }
        
         
-        //System.out.println("zajebatsia! --         "+getServletContext().getContextPath());
+       
         
         //EXCHANGE CODE FOR TOKEN
         HttpResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUri).executeUnparsed();

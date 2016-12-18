@@ -765,7 +765,7 @@ function findSavedPatients(table, datatable){
                 datatable.removeRows(0, datatable.getNumberOfRows());
                 for (var i = 0; i < response.length; i++) {
                     datatable.addRow([response[i].name, response[i].surname, response[i].birthDate, response[i].fitbitId,
-                        JSON.stringify({fullDates: response[i].fullDates, partDates: response[i].partDates,nosyncDates: response[i].nosyncDates,nodataDates: response[i].nodataDates })]);
+                        JSON.stringify({fullDates: response[i].fullDates, partDates: response[i].partDates,nosyncDates: response[i].nosyncDates,nodataDates: response[i].nodataDates, lostDates:response[i].lostDates })]);
                 }
                 var view = new google.visualization.DataView(datatable);
                 view.setColumns([0, 1, 2]); //here you set the columns you want to display
@@ -808,7 +808,7 @@ function addToShortlist(table, datatable){
               var fillings = datatable.getValue(row,4);
 
               var dates = JSON.parse(fillings);
-              allUsers.push({fitbitId: fitbitId, name: name,surname:surname, birthDate:birthDate,fullDates: dates.fullDates, partDates: dates.partDates, nosyncDates:dates.nosyncDates, nodataDates:dates.nodataDates  });
+              allUsers.push({fitbitId: fitbitId, name: name,surname:surname, birthDate:birthDate,fullDates: dates.fullDates, partDates: dates.partDates, nosyncDates:dates.nosyncDates, nodataDates:dates.nodataDates, lostDates:dates.lostDates  });
 
         }
      
@@ -846,7 +846,7 @@ function updateSelectEnlist(patientsToAdd){
             $('#userIDselect').prepend($('<option>', { 
                     value: nextPatient.fitbitId,
                     text : nextPatient.name+" "+nextPatient.surname,
-                    "data-foo" :  JSON.stringify({"full":nextPatient.fullDates, "part":nextPatient.partDates, "nosync":nextPatient.nosyncDates, "nodata":nextPatient.nodataDates}),
+                    "data-foo" :  JSON.stringify({"full":nextPatient.fullDates, "part":nextPatient.partDates, "nosync":nextPatient.nosyncDates, "nodata":nextPatient.nodataDates, "lost":nextPatient.lostDates}),
                     selected: "selected"
                 }));
         });
@@ -1141,14 +1141,14 @@ function processDatabaseData(intraday, response, deferred){
     //[[Date,Total steps][2016-06-09,"325876"][2016-06-10,"213111"]...] for interday -> parseInt
     
    
-
+    var errorSpanFit = $("#errorSpanFit");
     if (response.length===0){
         setStatus(errorSpanFit, "Db has no data for specified range", "ui-state-highlight", deferred);
         clearChartSliderAreaAndGetMemoryBack();
         return;
     }
     
-    var errorSpanFit = $("#errorSpanFit");
+    
 
 
     

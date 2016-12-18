@@ -54,7 +54,7 @@ public class FitbitRequestManager {
     }
     
     public static String getLastSyncDate(String activeUserEmail,String fitbitId) throws Exception{
-        
+       
         final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
        
         if (requestFactory==null){
@@ -95,7 +95,7 @@ public class FitbitRequestManager {
     
     //http://www.programcreek.com/java-api-examples/index.php?api=com.google.api.client.auth.oauth2.StoredCredential -- good one!!!
     public static ArrayList<DayResponse> retrieveFromFitbitIntraday(String[] selDates, String fitbitId, String activeUserEmail ) throws Exception{
-        
+       
         
         final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
        
@@ -161,6 +161,7 @@ public class FitbitRequestManager {
     
     
     public static ArrayList<DayResponse> retrieveFromFitbitInterday(String[] selDates, String fitbitId, String activeUserEmail ) throws Exception{
+       
         
         final HttpRequestFactory requestFactory = getRequestFactory(activeUserEmail+fitbitId); 
         
@@ -212,7 +213,7 @@ public class FitbitRequestManager {
     
      //credential -- http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client/1.7.0-beta/com/google/api/client/auth/oauth2/Credential.java#Credential.refreshToken%28%29
     //authorizationCodeFlow -- http://grepcode.com/file/repo1.maven.org/maven2/com.google.oauth-client/google-oauth-client/1.7.0-beta/com/google/api/client/auth/oauth2/AuthorizationCodeFlow.java#AuthorizationCodeFlow.createAndStoreCredential%28com.google.api.client.auth.oauth2.TokenResponse%2Cjava.lang.String%29
-    public static HttpRequestFactory getRequestFactory(String credKeyInStore) {
+    private static HttpRequestFactory getRequestFactory(String credKeyInStore) {
         
      AuthorizationCodeFlow flow;
         

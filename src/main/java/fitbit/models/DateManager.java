@@ -123,7 +123,7 @@ public class DateManager {
                 desiredDates.remove(desiredDates.indexOf(date));
             }
 
-            ArrayList<String> allPositiveStepsDates = new ArrayList<>(addedDatesForInjection);
+            
             
             //steps ==0 
             if (desiredDates.size()>0){
@@ -197,7 +197,7 @@ public class DateManager {
                 while(stmt2Rs.next()){
                 
                 
-                    indexInFitbitData = allPositiveStepsDates.indexOf(stmt2Rs.getString(1));
+                    indexInFitbitData = getIndexOfDate(fitbitData,stmt2Rs.getString(1)); //fitbitData.indexOf(stmt2Rs.getString(1));
                     int date_id = stmt2Rs.getInt(2);
                  
                     
@@ -237,6 +237,15 @@ public class DateManager {
 
     }
     
+    
+    private static int getIndexOfDate(ArrayList<DayResponse> arr, String date){
+        for (int i=0;i<arr.size();i++){
+            if (arr.get(i).getActivities_steps().get(0).getDateTime().equals(date)){
+                return i;
+            }  
+        }
+        return -1;
+    }
     
      private String incrementDate(String from_date) throws java.text.ParseException{
         

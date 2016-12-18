@@ -5,14 +5,8 @@
  */
 package fitbit.servlets;
 
-import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
-import com.google.api.client.auth.oauth2.BearerToken;
-import com.google.api.client.auth.oauth2.Credential;
+
 import com.google.api.client.auth.oauth2.StoredCredential;
-import com.google.api.client.http.BasicAuthentication;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.jackson.JacksonFactory;
 import com.google.api.client.util.store.DataStore;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.gson.Gson;
@@ -20,11 +14,14 @@ import fitbit.models.PatientManager;
 import fitbit.models.User;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -70,13 +67,19 @@ public class DeletePatients extends HttpServlet {
             us.removePatientById(idsToDel);//delete from session
             
             //delete from token store
-            FileDataStoreFactory ff = new FileDataStoreFactory(new File("C:\\Users\\Vlad\\Desktop\\tokens"));
+            ServletContext context = getServletContext();
+            URL resourceUrl = context.getResource("/WEB-INF/tokens");
+            URI uri = resourceUrl.toURI();
+            FileDataStoreFactory ff = new FileDataStoreFactory(new File(uri));
             DataStore ds = StoredCredential.getDefaultDataStore(ff);//datastore with DEFAULT_DATA_STORE_ID
             for (String fitId : idsToDel) {
                 ds.delete(activeUserEmail+fitId);
             }
             
             
+        }
+        catch(URISyntaxException  use){
+             System.out.println("shouldn't happen");
         }
         catch (SQLException sqle){
                 sqle.printStackTrace();
