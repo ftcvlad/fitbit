@@ -77,7 +77,7 @@ public class PatientManager {
          
             String nameCondition="";
             if (!nameToFind.equals("")){
-                nameCondition = "AND patients.name=?";
+                nameCondition = "AND fitbit_patients.name=?";
             }
 
             PreparedStatement stmt = conn.prepareStatement("SELECT fitbit_dates.Date,fitbit_dates.filling,fitbit_patients.PCpair_id, fitbit_patients.name, fitbit_patients.surname, fitbit_patients.birthDate, fitbit_patients.userID"+

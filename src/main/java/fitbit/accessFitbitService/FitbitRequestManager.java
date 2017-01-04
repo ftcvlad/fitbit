@@ -116,9 +116,9 @@ public class FitbitRequestManager {
 
                 HttpRequest request = requestFactory.buildGetRequest(requestUrl);
                 
-                System.out.println("execute started: "+System.currentTimeMillis() );
+                //System.out.println("execute started: "+System.currentTimeMillis() );
                 HttpResponse response = request.execute();
-                System.out.println("execute ended: "+System.currentTimeMillis() );
+                //System.out.println("execute ended: "+System.currentTimeMillis() );
 
                 if (response.isSuccessStatusCode()) {
 
@@ -142,18 +142,16 @@ public class FitbitRequestManager {
 
                 } else {
                     System.out.println("Issue with the server call: " + response.getStatusMessage());
+                    throw new Exception("Fitbit call failed");
                 }
             } 
             
         }
         catch(JsonSyntaxException jse){
             System.out.println("Poles changed places -- fitbit changed API. Json syntax exception");
+            throw jse;
         }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
-            //HTTPResponseException, IOException,...
-           
-        }
+       
         
         return allDaysData;
           
@@ -172,40 +170,39 @@ public class FitbitRequestManager {
         ArrayList<DayResponse> allDaysData = new ArrayList<>();
         Gson gson = new Gson();
         
-        try{
+        
     
-            String start = selDates[0];
-            String end = selDates[selDates.length-1];
+        String start = selDates[0];
+        String end = selDates[selDates.length-1];
 
-            GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + start+ "/" + end + ".json");
+        GenericUrl requestUrl = new GenericUrl("https://api.fitbit.com/1/user/"+fitbitId+"/" + "activities/steps/date/" + start+ "/" + end + ".json");
 
-            HttpRequest request = requestFactory.buildGetRequest(requestUrl);
-            HttpResponse response = request.execute();
+        HttpRequest request = requestFactory.buildGetRequest(requestUrl);
+        HttpResponse response = request.execute();
 
-            if (response.isSuccessStatusCode()) {
+        if (response.isSuccessStatusCode()) {
 
-                //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},...]}
-                String responseAsString = response.parseAsString();
-                DayResponse onlyInterdayResult = gson.fromJson(responseAsString, DayResponse.class);
+            //{"activities-steps":[{"dateTime":"2016-06-09","value":"12968"},{"dateTime":"2016-06-10","value":"1325"},...]}
+            String responseAsString = response.parseAsString();
+            DayResponse onlyInterdayResult = gson.fromJson(responseAsString, DayResponse.class);
 
 
-                //output 0 step days (for continuity), but should be at least 1 day with steps >0
+            //output 0 step days (for continuity), but should be at least 1 day with steps >0
 
-                for (DaySummary ds : onlyInterdayResult.getActivities_steps()) {
-                    if (ds.getValue()!=0){
-                        allDaysData.add(onlyInterdayResult);
-                        break;
-                    }
+            for (DaySummary ds : onlyInterdayResult.getActivities_steps()) {
+                if (ds.getValue()!=0){
+                    allDaysData.add(onlyInterdayResult);
+                    break;
                 }
             }
-            else {
-                    System.out.println("Issue with the server call: " + response.getStatusMessage());
-            }
+        }
+        else {
+                System.out.println("Issue with the server call: " + response.getStatusMessage());
+                throw new Exception("Fitbit call failed");
+        }
         
-        }
-        catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+        
+        
         
         return allDaysData;
     }
